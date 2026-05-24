@@ -136,12 +136,12 @@ export const AdCreationModal: React.FC<AdCreationModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-2xl rounded-[32px] shadow-2xl border border-white/50 overflow-hidden my-6">
+      <div className="relative w-full max-w-4xl bg-white/95 backdrop-blur-2xl rounded-[10px] shadow-2xl border border-white/50 overflow-hidden my-6">
         
         {/* Top header title details */}
         <div className="flex items-center justify-between px-6 md:px-8 py-5 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-sm">
+            <div className="p-2 bg-indigo-600 text-white rounded-[10px] shadow-sm">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
@@ -161,7 +161,7 @@ export const AdCreationModal: React.FC<AdCreationModalProps> = ({
         </div>
 
         {validationError && (
-          <div className="mx-6 md:mx-8 mt-4 bg-red-50 border border-red-100/50 rounded-xl p-3 flex items-center gap-2 text-xs text-red-600">
+          <div className="mx-6 md:mx-8 mt-4 bg-red-50 border border-red-100/50 rounded-[10px] p-3 flex items-center gap-2 text-xs text-red-600">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{validationError}</span>
           </div>
@@ -187,7 +187,7 @@ export const AdCreationModal: React.FC<AdCreationModalProps> = ({
                   value={title} 
                   onChange={(e) => setTitle(e.target.value)} 
                   placeholder="Ví dụ: Sự biến đổi của gạch men thô, Nghệ thuật Bauhaus..." 
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 bg-slate-50/50 outline-none text-slate-800 transition-colors"
+                  className="w-full px-4 py-2.5 rounded-[10px] border border-slate-200 focus:border-indigo-500 bg-slate-50/50 outline-none text-slate-800 transition-colors"
                 />
               </div>
 
@@ -197,7 +197,7 @@ export const AdCreationModal: React.FC<AdCreationModalProps> = ({
                   <select 
                     value={category} 
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 bg-slate-50/50 outline-none text-slate-700 transition-colors"
+                    className="w-full px-3 py-2.5 rounded-[10px] border border-slate-200 focus:border-indigo-500 bg-slate-50/50 outline-none text-slate-700 transition-colors"
                   >
                     {categories.filter(c => c.id !== "browse" && c.id !== "admin" && c.id !== "favorites").map((cat) => (
                       <option key={cat.id} value={cat.label}>{cat.label}</option>
@@ -210,7 +210,7 @@ export const AdCreationModal: React.FC<AdCreationModalProps> = ({
                     type="number" 
                     value={readTimeVal} 
                     onChange={(e) => setReadTimeVal(Math.max(1, Number(e.target.value)))} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 bg-slate-50/50 outline-none text-slate-800 font-mono transition-colors"
+                    className="w-full px-4 py-2.5 rounded-[10px] border border-slate-200 focus:border-indigo-500 bg-slate-50/50 outline-none text-slate-800 font-mono transition-colors"
                     placeholder="Mins Read"
                   />
                 </div>
@@ -221,7 +221,7 @@ export const AdCreationModal: React.FC<AdCreationModalProps> = ({
                 <select 
                   value={selectedImage} 
                   onChange={(e) => setSelectedImage(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 bg-slate-50/50 outline-none text-slate-700 transition-colors"
+                  className="w-full px-3 py-2.5 rounded-[10px] border border-slate-200 focus:border-indigo-500 bg-slate-50/50 outline-none text-slate-700 transition-colors"
                 >
                   {imgOptions.map((opt) => (
                     <option key={opt.type} value={opt.type}>{opt.label}</option>
@@ -236,7 +236,7 @@ export const AdCreationModal: React.FC<AdCreationModalProps> = ({
                   onChange={(e) => setNotes(e.target.value)} 
                   rows={3}
                   placeholder="Ví dụ: Nhấn mạnh về các màu phấn nhạt, phân tích tính công năng, phỏng vấn một kiến trúc sư Thụy Điển..." 
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 bg-slate-50/50 outline-none text-slate-800 transition-colors resize-none"
+                  className="w-full px-4 py-2.5 rounded-[10px] border border-slate-200 focus:border-indigo-500 bg-slate-50/50 outline-none text-slate-800 transition-colors resize-none"
                 />
               </div>
 
@@ -244,7 +244,7 @@ export const AdCreationModal: React.FC<AdCreationModalProps> = ({
                 type="button"
                 onClick={handleGenerateAIAd}
                 disabled={aiLoading}
-                className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-md shadow-indigo-100 transition-all duration-300 disabled:opacity-75 cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-4 rounded-[10px] shadow-md shadow-indigo-100 transition-all duration-300 disabled:opacity-75 cursor-pointer"
               >
                 <Sparkles className="w-4 h-4" />
                 {aiLoading ? "Gemini đang chắp bút bài báo..." : "Biên Soạn Bản Nháp Bằng Gemini AI"}
@@ -258,20 +258,20 @@ export const AdCreationModal: React.FC<AdCreationModalProps> = ({
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block select-none">Bản nháp được chế tác bởi AI</span>
                 
                 {aiLoading ? (
-                  <div className="p-8 border-2 border-dashed border-indigo-100 rounded-2xl flex flex-col items-center justify-center py-16">
+                  <div className="p-8 border-2 border-dashed border-indigo-100 rounded-[10px] flex flex-col items-center justify-center py-16">
                     <div className="w-8 h-8 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin mb-3"></div>
                     <p className="text-slate-400 text-xs">Gemini AI đang dệt bản chuyên khảo phong phú...</p>
                   </div>
                 ) : aiGenerated ? (
                   <div className="space-y-4 animate-fade-in text-xs">
                     {/* Draft Title */}
-                    <div className="bg-white p-4 rounded-xl border border-indigo-100/50 shadow-xs">
+                    <div className="bg-white p-4 rounded-[10px] border border-indigo-100/50 shadow-xs">
                       <span className="text-[9px] text-indigo-500 font-extrabold uppercase block mb-1">Tiêu đề bài viết bóng bẩy</span>
                       <h4 className="font-bold text-slate-800 text-xs">{aiGenerated.adTitle}</h4>
                     </div>
 
                     {/* Draft content */}
-                    <div className="bg-white p-4 rounded-xl border border-indigo-100/50 shadow-xs">
+                    <div className="bg-white p-4 rounded-[10px] border border-indigo-100/50 shadow-xs">
                       <span className="text-[9px] text-indigo-500 font-extrabold uppercase block mb-1">Nội dung cột báo chí</span>
                       <p className="text-slate-600 text-[11px] leading-relaxed whitespace-pre-line">{aiGenerated.adDescription}</p>
                     </div>
@@ -279,14 +279,14 @@ export const AdCreationModal: React.FC<AdCreationModalProps> = ({
                     {/* Draft hashtags */}
                     <div className="flex gap-2.5 flex-wrap">
                       {aiGenerated.adKeywords.map((kw, i) => (
-                        <span key={i} className="text-[10px] bg-indigo-50 text-indigo-600 rounded-md px-2 py-1 font-mono">
+                        <span key={i} className="text-[10px] bg-indigo-50 text-indigo-600 rounded-[10px] px-2 py-1 font-mono">
                           #{kw}
                         </span>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <div className="p-8 border border-slate-200/60 rounded-2xl flex flex-col items-center justify-center py-16 text-center">
+                  <div className="p-8 border border-slate-200/60 rounded-[10px] flex flex-col items-center justify-center py-16 text-center">
                     <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
                       <BookOpen className="w-6 h-6" />
                     </div>
@@ -300,7 +300,7 @@ export const AdCreationModal: React.FC<AdCreationModalProps> = ({
               <div className="pt-6 border-t border-slate-100 mt-6 md:mt-0">
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-extrabold py-4 px-6 rounded-2xl shadow-lg transition-all duration-300 cursor-pointer text-xs"
+                  className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-extrabold py-4 px-6 rounded-[10px] shadow-lg transition-all duration-300 cursor-pointer text-xs"
                 >
                   Xuất Bản Bài Viết Lên Tuần San <ArrowRight className="w-4 h-4" />
                 </button>

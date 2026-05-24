@@ -164,7 +164,7 @@ export default function App() {
       <div className="absolute bottom-[15%] left-[5%] w-14 h-14 rounded-full bg-cyan-100/30 backdrop-blur-md border border-white/40 -z-10 animate-float-slow pointer-events-none" />
 
       {/* Main Glassmorphic Central Website Wrapper */}
-      <div className="max-w-6xl w-full mx-auto bg-white/70 backdrop-blur-xl rounded-[40px] shadow-2xl border border-white/45 overflow-hidden transition-all duration-300 relative">
+      <div className="max-w-6xl w-full mx-auto bg-white/70 backdrop-blur-xl rounded-[10px] shadow-2xl border border-white/45 overflow-hidden transition-all duration-300 relative">
         
         {/* Floating alerts overlay */}
         {loginAlert && (
@@ -461,7 +461,7 @@ export default function App() {
 
           {/* Core dynamic blog post cards list */}
           {filteredListings.length === 0 ? (
-            <div className="p-16 border border-dashed border-slate-200 rounded-[32px] text-center max-w-lg mx-auto bg-white/50">
+            <div className="p-16 border border-dashed border-slate-200 rounded-[10px] text-center max-w-lg mx-auto bg-white/50">
               <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mx-auto mb-3">
                 <Search className="w-5 h-5" />
               </div>
@@ -489,7 +489,7 @@ export default function App() {
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ duration: 0.3 }}
                       key={item.id}
-                      className="group bg-white/70 backdrop-blur-md rounded-[28px] p-4 border border-white/50 hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                      className="group bg-white/70 backdrop-blur-md rounded-[10px] p-4 border border-white/50 hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer"
                       onClick={() => handleSelectListing(item)}
                     >
                       {/* Top labels */}
@@ -520,17 +520,17 @@ export default function App() {
                       </div>
 
                       {/* Gorgeous stylized 3D placeholder matching gradient profile */}
-                      <div className={`aspect-square rounded-[20px] bg-gradient-to-br ${item.glassClass} p-3 flex items-center justify-center relative overflow-hidden shadow-xs border border-white/40 mb-4`}>
+                      <div className={`aspect-square rounded-[10px] bg-gradient-to-br ${item.glassClass} p-3 flex items-center justify-center relative overflow-hidden shadow-xs border border-white/40 mb-4`}>
                         <Listing3DImage type={item.imageType} className="w-36 h-36" hover={true} />
                       </div>
 
                       {/* Lower card metadata */}
                       <div className="text-left mt-1 px-1">
-                        <span className="text-[9px] font-bold text-indigo-600 block mb-1 uppercase tracking-wider font-display shrink-0">
+                        <span className="text-[10px] font-bold text-indigo-600 block mb-1 uppercase tracking-wider font-display shrink-0">
                           {item.category}
                         </span>
                         
-                        <h3 className="text-xs font-black text-slate-800 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-relaxed mb-2 font-display" title={item.title}>
+                        <h3 className="text-[13.5px] font-extrabold text-slate-850 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-relaxed mb-2 font-display" title={item.title}>
                           {item.title}
                         </h3>
 
@@ -559,7 +559,7 @@ export default function App() {
         </section>
 
         {/* 5. BRAND FOOTER GRID */}
-        <footer className="px-6 md:px-12 py-12 bg-slate-900 text-slate-300 border-t border-slate-800 rounded-b-[40px] text-xs">
+        <footer className="px-6 md:px-12 py-12 bg-slate-900 text-slate-300 border-t border-slate-800 rounded-b-[10px] text-xs">
           <div className="grid grid-cols-2 md:grid-cols-12 gap-8 md:gap-4 pb-8 border-b border-slate-800 text-xs">
             
             {/* Column A: Active Brand column */}

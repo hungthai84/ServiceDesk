@@ -98,10 +98,10 @@ Hành động: ${selectedAction.toUpperCase()} (${targetParam})
   };
 
   const fontClasses = {
-    sm: "text-sm",
-    base: "text-base",
-    lg: "text-lg",
-    xl: "text-xl"
+    sm: "text-[14px] leading-relaxed",
+    base: "text-[16px] leading-relaxed",
+    lg: "text-[18px] leading-relaxed",
+    xl: "text-[21px] leading-relaxed"
   };
 
   return (
@@ -113,8 +113,8 @@ Hành động: ${selectedAction.toUpperCase()} (${targetParam})
       <div 
         className={`relative w-full transition-all duration-500 ease-out border overflow-hidden ${
           isFocusMode 
-            ? `max-w-4xl h-full md:h-[94vh] shadow-2xl shadow-black/80 rounded-none md:rounded-[36px] ${themeClasses[focusTheme]}` 
-            : "max-w-5xl my-8 bg-white/95 backdrop-blur-2xl rounded-[32px] shadow-2xl border border-white/50"
+            ? `max-w-4xl h-full md:h-[94vh] shadow-2xl shadow-black/80 rounded-none md:rounded-[10px] ${themeClasses[focusTheme]}` 
+            : "max-w-5xl my-8 bg-white/95 backdrop-blur-2xl rounded-[10px] shadow-2xl border border-white/50"
         }`} 
         id="listing-detail"
       >
@@ -259,7 +259,7 @@ Hành động: ${selectedAction.toUpperCase()} (${targetParam})
           {/* LEFT SIDE PANEL: 3D cover container + views stats */}
           {!isFocusMode && (
             <div className="md:col-span-5 bg-gradient-to-br from-slate-50 to-slate-100/30 p-6 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-100 animate-fade-in">
-              <div className={`w-full max-w-xs aspect-square rounded-[24px] bg-gradient-to-br ${listing.glassClass} p-4 flex items-center justify-center relative overflow-hidden shadow-inner border border-white/40`}>
+              <div className={`w-full max-w-xs aspect-square rounded-[10px] bg-gradient-to-br ${listing.glassClass} p-4 flex items-center justify-center relative overflow-hidden shadow-inner border border-white/40`}>
                 <Listing3DImage type={listing.imageType} className="w-56 h-56" />
                 {listing.sponsored && (
                   <span className="absolute top-3 left-3 px-3 py-1 text-[9px] font-extrabold tracking-widest uppercase text-indigo-950 bg-indigo-300 rounded-full shadow-xs">
@@ -365,15 +365,15 @@ Hành động: ${selectedAction.toUpperCase()} (${targetParam})
                   ? focusSerif 
                     ? "font-serif" 
                     : "font-sans"
-                  : "prose-indigo text-slate-705 text-sm"
+                  : "prose-indigo text-slate-705 text-sm md:text-base"
               } ${isFocusMode ? fontClasses[focusFontSize] : ""}`}>
                 {/* Strong Lead paragraph */}
-                <p className={`font-bold border-l-4 rounded-r-xl pl-4 py-2 ${
+                <p className={`font-bold border-l-4 rounded-r-[10px] pl-4 py-2.5 ${
                   isFocusMode
                     ? focusTheme === "dark"
                       ? "border-indigo-400 bg-indigo-950/20 text-indigo-200"
                       : "border-indigo-500 bg-indigo-50/40 text-indigo-950"
-                    : "border-indigo-500 bg-indigo-50/20 text-slate-900 text-sm"
+                    : "border-indigo-500 bg-indigo-50/20 text-slate-900 text-[15px] md:text-[16px]"
                 }`}>
                   {listing.description}
                 </p>
@@ -386,7 +386,7 @@ Hành động: ${selectedAction.toUpperCase()} (${targetParam})
                       : focusTheme === "sepia"
                         ? "text-[#3a2712] opacity-90"
                         : "text-slate-800"
-                    : "text-xs font-sans text-slate-650"
+                    : "text-[14px] md:text-[15px] font-sans text-slate-650"
                 }`}>
                   {listing.content || "Mô tả bài viết chưa được cập nhật đầy đủ."}
                 </div>
@@ -434,7 +434,7 @@ Hành động: ${selectedAction.toUpperCase()} (${targetParam})
 
               {/* INTERACTIVE GEMINI AI EDITORIAL COPILOT PANEL */}
               {(!isFocusMode || showAICopilotInFocus) ? (
-                <div className="bg-gradient-to-tr from-indigo-50/50 to-violet-50/50 border border-indigo-100/60 rounded-[28px] p-5 animate-fade-in">
+                <div className="bg-gradient-to-tr from-indigo-50/50 to-violet-50/50 border border-indigo-100/60 rounded-[10px] p-5 animate-fade-in">
                   
                   {/* Header Title with animated stars */}
                   <div className="flex items-center justify-between mb-4">
