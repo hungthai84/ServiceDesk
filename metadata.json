@@ -1,0 +1,6 @@
+{
+  "name": "ClassiAds",
+  "description": "An elegant, premium editorial and design blog platform featuring a real-time full-stack Firebase Firestore database schema and secure Google Gmail integrations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

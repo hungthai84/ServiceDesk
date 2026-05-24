@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "BlogPost": {
+      "title": "BlogPost",
+      "description": "An editorial article or blog post listing",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "readTime": { "type": "string" },
+        "originalDate": { "type": "string" },
+        "location": { "type": "string" },
+        "glassClass": { "type": "string" },
+        "imageType": { "type": "string" },
+        "author": { "type": "object" },
+        "description": { "type": "string" },
+        "content": { "type": "string" },
+        "specs": { "type": "array" },
+        "sponsored": { "type": "boolean" },
+        "views": { "type": "integer" },
+        "likes": { "type": "integer" },
+        "dateStr": { "type": "string" },
+        "authorId": { "type": "string" }
+      },
+      "required": ["id", "title", "category", "readTime", "location", "glassClass", "imageType", "author", "description", "content", "specs", "views", "likes", "dateStr"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile collection isolated to owner",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Like": {
+      "title": "Like",
+      "description": "A relational record mapping document liking status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "postId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "postId"]
+    }
+  },
+  "firestore": {
+    "/posts/{postId}": {
+      "schema": "BlogPost",
+      "description": "Collection of all editorial articles"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of user metadata"
+    },
+    "/users/{userId}/likes/{likeId}": {
+      "schema": "Like",
+      "description": "Subcollection tracking posts liked by a user"
+    }
+  }
+}
