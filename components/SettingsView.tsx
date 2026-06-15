@@ -94,11 +94,31 @@ const ServiceCard: React.FC<{
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-[--color-surface-solid] rounded-lg">{React.cloneElement(service.icon, { className: "w-6 h-6 text-[--color-accent-600]" })}</div>
-                    <h3 className="font-bold text-lg text-[--color-text-primary]">{service.name}</h3>
+                    <div className="text-left">
+                        <h3 className="font-bold text-lg text-[--color-text-primary]">{service.name}</h3>
+                        {service.isConnected && service.lastSync && (
+                            <p className="text-[10px] text-[--color-text-subtle] font-medium flex items-center gap-1 mt-0.5">
+                                <span className={`w-1.5 h-1.5 rounded-full ${service.isSyncEnabled ? 'bg-green-500 animate-pulse' : 'bg-slate-400 font-bold'}`}></span>
+                                Sync: {service.lastSync}
+                            </p>
+                        )}
+                    </div>
                 </div>
-                <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${service.isConnected ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-600'}`}>
-                    {service.isConnected ? t('connected') : t('notConnected')}
-                </span>
+                <div className="flex flex-col items-end gap-1.5 text-right">
+                    <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full ${service.isConnected ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-slate-200 text-slate-600 border border-slate-300'}`}>
+                        {service.isConnected ? t('connected') : t('notConnected')}
+                    </span>
+                    {service.isConnected && service.storageUsage && (
+                        <div className="flex flex-col items-end gap-1">
+                             <div className="w-20 h-1 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-[--color-accent-500]" style={{ width: service.id === 'Drive' ? '30%' : '10%' }}></div>
+                             </div>
+                             <span className="text-[9px] font-bold text-[--color-text-subtle]">
+                                {service.storageUsage}
+                             </span>
+                        </div>
+                    )}
+                </div>
             </div>
             <div className="mt-4 pt-4 border-t border-[--color-border-secondary] flex items-center justify-between">
                  <div className="flex items-center gap-2">
@@ -136,6 +156,10 @@ interface SettingsViewProps {
     onUsersChange: (users: User[]) => void;
     initialSection?: string | null;
     onNavigate: (view: View, section?: string) => void;
+    theme: 'light' | 'dark' | 'system';
+    setTheme: (theme: 'light' | 'dark' | 'system') => void;
+    accentColor: string;
+    setAccentColor: (color: string) => void;
 }
 type Theme = 'light' | 'dark' | 'system';
 const THEMES: { name: Theme, icon: React.ReactNode }[] = [
@@ -164,7 +188,20 @@ const mockFetchedArticles = [
     },
 ];
 
-const SettingsView: React.FC<SettingsViewProps> = ({ user, services, onToggleSync, onToggleConnection, allUsers, onUsersChange, initialSection, onNavigate }) => {
+const SettingsView: React.FC<SettingsViewProps> = ({ 
+    user, 
+    services, 
+    onToggleSync, 
+    onToggleConnection, 
+    allUsers, 
+    onUsersChange, 
+    initialSection, 
+    onNavigate,
+    theme,
+    setTheme,
+    accentColor,
+    setAccentColor
+}) => {
     const { language, setLanguage, t } = useLanguage();
     const [activeSection, setActiveSection] = useState('profile');
 
@@ -312,16 +349,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, services, onToggleSyn
         setTimeout(() => setProfileMessage(''), 4000);
     };
 
-    // General Settings States
-    const [theme, setTheme] = useState<Theme>('system');
-    const [accentColor, setAccentColor] = useState('cyan');
-    const [isSpeechEnabled, setIsSpeechEnabled] = useState(true);
-    const [isRobotEffectEnabled, setIsRobotEffectEnabled] = useState(false);
-    const [isSoundEffectsEnabled, setIsSoundEffectsEnabled] = useState(true);
-    const [isCursorTrailsEnabled, setIsCursorTrailsEnabled] = useState(false);
-    const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-    const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(null);
-
     // Blog Settings States
     const [blogUrl, setBlogUrl] = useState('');
     const [blogFrequency, setBlogFrequency] = useState('manual');
@@ -384,22 +411,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, services, onToggleSyn
         }
     }, []);
 
-    // Effect to apply theme
-    useEffect(() => {
-        localStorage.setItem('theme', theme);
-        const doc = document.documentElement;
-        if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        doc.classList.add('dark');
-        } else {
-        doc.classList.remove('dark');
-        }
-    }, [theme]);
-
-    // Effect to apply accent color
-    useEffect(() => {
-        localStorage.setItem('accentColor', accentColor);
-        document.documentElement.setAttribute('data-accent-color', accentColor);
-    }, [accentColor]);
+    const [isSpeechEnabled, setIsSpeechEnabled] = useState(true);
+    const [isRobotEffectEnabled, setIsRobotEffectEnabled] = useState(false);
+    const [isSoundEffectsEnabled, setIsSoundEffectsEnabled] = useState(true);
+    const [isCursorTrailsEnabled, setIsCursorTrailsEnabled] = useState(false);
+    const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+    const [selectedVoiceURI, setSelectedVoiceURI] = useState<string | null>(null);
 
     // Effects for other settings
     useEffect(() => { localStorage.setItem('aiSpeechEnabled', String(isSpeechEnabled)); }, [isSpeechEnabled]);
@@ -503,7 +520,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({ user, services, onToggleSyn
 
     const sections = [
         { id: 'profile', label: t('profile'), icon: <UserCircleIcon className="w-5 h-5"/>, description: t('manageYourProfile') },
-        { id: 'appearance', label: t('appearance'), icon: <SunIcon className="w-5 h-5"/>, description: t('customizeAppearance') },
+        { id: 'appearance', label: 'Theme Preferences', icon: <SunIcon className="w-5 h-5"/>, description: 'Customize your application theme and colors' },
         { id: 'language', label: t('language'), icon: <GlobeIcon className="w-5 h-5"/>, description: t('chooseLanguage') },
         { id: 'effects', label: t('effectsAndSound'), icon: <ZapIcon className="w-5 h-5"/>, description: t('manageEffects') },
         { id: 'ai_voice', label: t('aiVoiceSettings'), icon: <RobotIcon className="w-5 h-5"/>, description: t('configureAiAssistant') },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from '../App';
+import { View } from '../types';
 import { useLanguage } from './LanguageContext';
 // FIX: Import IconProps to correctly type the icon element.
 import { BookOpenIcon, FileTextIcon, UsersIcon, ChecklistIcon, CalendarIcon, ChatIcon, IconProps } from './icons';

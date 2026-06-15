@@ -18,9 +18,15 @@ import {
   Users,
   Link,
   Paperclip,
-  File as FileIcon
+  File as FileIcon,
+  RefreshCcw,
 } from 'lucide-react';
 import { initialContacts } from './ContactsView';
+import { db } from '../firebase';
+import { collection, query, where, onSnapshot, doc, addDoc, updateDoc, deleteDoc, getDocs } from 'firebase/firestore';
+import { handleFirestoreError, OperationType } from '../firebase-errors';
+import { fetchGoogleKeepNotes, getAccessToken, GoogleKeepNote } from '../googleKeep';
+import GooglePickerButton from './GooglePickerButton';
 
 export const mockNotes: Note[] = [
   {
@@ -149,6 +155,16 @@ const CreateNote = React.forwardRef<CreateNoteHandle, CreateNoteProps>(({ onAddN
     setSharedWith(prev => 
       prev.includes(contactId) ? prev.filter(id => id !== contactId) : [...prev, contactId]
     );
+  };
+   
+  const handlePicked = (docs: { id: string; name: string; mimeType: string; url: string; lastEditedUtc: number; iconUrl: string; parentId: string; sizeBytes?: number }[]) => {
+    const newAttachments = docs.map((doc) => ({
+      name: doc.name,
+      url: doc.url,
+      size: doc.sizeBytes ? `${(doc.sizeBytes / 1024).toFixed(1)} KB` : undefined,
+      type: doc.mimeType || 'application/octet-stream'
+    }));
+    setAttachments(prev => [...prev, ...newAttachments]);
   };
    
   const handleDragOver = (e: React.DragEvent) => {
@@ -575,6 +591,9 @@ const CreateNote = React.forwardRef<CreateNoteHandle, CreateNoteProps>(({ onAddN
                     <Paperclip className="w-4 h-4" />
                   </button>
 
+                  {/* Google Drive Picker component integration */}
+                  <GooglePickerButton onPicked={handlePicked} variant="icon" label="Chọn tệp từ Google Drive" />
+
                   {/* Share selector popover direct handle */}
                   <div className="relative">
                     <button 
@@ -704,11 +723,36 @@ const CreateNote = React.forwardRef<CreateNoteHandle, CreateNoteProps>(({ onAddN
 });
 
 
-const NotesView: React.FC = () => {
-  const [notes, setNotes] = useState<Note[]>(() => {
-    const stored = localStorage.getItem('keep_notes');
-    return stored ? JSON.parse(stored) : mockNotes;
-  });
+const NotesView: React.FC<{ user: User; onSync?: () => void }> = ({ user, onSync }) => {
+  const [notes, setNotes] = useState<Note[]>([]);
+  useEffect(() => {
+    if (!user || user.id.startsWith('user-')) {
+        setNotes(mockNotes);
+        return;
+    }
+
+    const q = query(
+        collection(db, 'notes'),
+        where('ownerId', '==', user.id)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const fetchedNotes = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as Note));
+        
+        if (fetchedNotes.length === 0 && !localStorage.getItem('notes_migrated')) {
+            setNotes(mockNotes);
+        } else {
+            setNotes(fetchedNotes);
+        }
+    }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'notes');
+    });
+
+    return () => unsubscribe();
+  }, [user?.id]);
 
   const [toastMessage, setToastMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -717,6 +761,78 @@ const NotesView: React.FC = () => {
   // Share Note Modal state
   const [sharingNote, setSharingNote] = useState<Note | null>(null);
   const [shareSearchTerm, setShareSearchTerm] = useState('');
+  const [isSyncingKeep, setIsSyncingKeep] = useState(false);
+
+  const handleSyncWithKeep = async () => {
+    setIsSyncingKeep(true);
+    try {
+      const token = await getAccessToken(true);
+      if (!token) throw new Error("Could not get access token");
+
+      const keepNotes: GoogleKeepNote[] = await fetchGoogleKeepNotes(token);
+      
+      // Simple one-way sync logic for demonstration:
+      // Loop over keep items, create or update them in Firestore.
+      for (const kNote of keepNotes) {
+        if (kNote.trashed) continue;
+        
+        const content = kNote.text?.text || kNote.body || '';
+        let checklist = [];
+        if (kNote.list?.listItems) {
+           checklist = kNote.list.listItems.map((item) => ({
+             item: item.text?.text || '',
+             done: item.checked || false
+           }));
+        }
+
+        const newNoteData = {
+          title: kNote.title || 'Keep Note',
+          content: content,
+          checklist: checklist.length > 0 ? checklist : undefined,
+          color: 'default',
+          tags: ['Google Keep']
+        };
+
+        // Simplified for this example, just add them as new notes to firestore
+        // normally we should match by keep ID (kNote.name)
+        if (user && !user.id.startsWith('user-')) {
+          const q = query(collection(db, 'notes'), where('keepId', '==', kNote.name), where('ownerId', '==', user.id));
+          const snapshot = await getDocs(q);
+          
+          if (snapshot.empty) {
+            await addDoc(collection(db, 'notes'), {
+              title: newNoteData.title || '',
+              content: newNoteData.content || '',
+              checklist: newNoteData.checklist || [],
+              color: newNoteData.color,
+              isPinned: false,
+              imageUrl: '',
+              tags: newNoteData.tags,
+              ownerId: user.id,
+              keepId: kNote.name,
+              createdAt: Date.now()
+            });
+          } else {
+            // Update existing if needed
+            const docId = snapshot.docs[0].id;
+            await updateDoc(doc(db, 'notes', docId), {
+              title: newNoteData.title || '',
+              content: newNoteData.content || '',
+              checklist: newNoteData.checklist || [],
+              updatedAt: Date.now()
+            });
+          }
+        }
+      }
+      showToast('Đã đồng bộ ghi chú từ Google Keep!');
+      if (onSync) onSync();
+    } catch (err) {
+      console.error(err);
+      showToast('Đồng bộ thất bại. Kiểm tra kết nối / quyền Keep API.');
+    } finally {
+      setIsSyncingKeep(false);
+    }
+  };
   
   // Modal Edit Note state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -733,9 +849,18 @@ const NotesView: React.FC = () => {
   const modalFileInputRef = useRef<HTMLInputElement>(null);
   
   // Custom states inside edit modal
-  const [modalAttachments, setModalAttachments] = useState<{ name: string; url: string; size?: string; type: string }[]>([]);
   const [modalSharedWith, setModalSharedWith] = useState<string[]>([]);
   const [modalShowSharePicker, setModalShowSharePicker] = useState(false);
+
+  const handleModalPicked = (docs: { id: string; name: string; mimeType: string; url: string; lastEditedUtc: number; iconUrl: string; parentId: string; sizeBytes?: number }[]) => {
+    const newAttachments = docs.map((doc) => ({
+      name: doc.name,
+      url: doc.url,
+      size: doc.sizeBytes ? `${(doc.sizeBytes / 1024).toFixed(1)} KB` : undefined,
+      type: doc.mimeType || 'application/octet-stream'
+    }));
+    setModalAttachments(prev => [...prev, ...newAttachments]);
+  };
   const modalAttachmentInputRef = useRef<HTMLInputElement>(null);
   
   const createNoteRef = useRef<CreateNoteHandle>(null);
@@ -831,34 +956,96 @@ const NotesView: React.FC = () => {
     localStorage.setItem('keep_notes', JSON.stringify(updated));
   };
 
-  const handleAddNote = (newNoteData: Partial<Note>) => {
-    const newNote: Note = {
-      id: `note-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-      color: newNoteData.color || 'default',
-      title: newNoteData.title || undefined,
-      content: newNoteData.content || undefined,
-      checklist: newNoteData.checklist || undefined,
-      imageUrl: newNoteData.imageUrl || undefined,
-      tags: newNoteData.tags || undefined,
-      isPinned: newNoteData.isPinned || false,
-    };
-    setNotes(prev => [newNote, ...prev]);
-    showToast("Đã lưu ghi chú mới thành công!");
+  const handleAddNote = async (newNoteData: Partial<Note>) => {
+    if (!user || user.id.startsWith('user-')) {
+        const newNote: Note = {
+            id: `note-${Date.now()}`,
+            createdAt: new Date().toISOString(),
+            color: newNoteData.color || 'default',
+            title: newNoteData.title || undefined,
+            content: newNoteData.content || undefined,
+            checklist: newNoteData.checklist || undefined,
+            imageUrl: newNoteData.imageUrl || undefined,
+            tags: newNoteData.tags || undefined,
+            isPinned: newNoteData.isPinned || false,
+        };
+        setNotes(prev => [newNote, ...prev]);
+        showToast("Đã lưu ghi chú mới (Local)!");
+        return;
+    }
+
+    try {
+        await addDoc(collection(db, 'notes'), {
+            title: newNoteData.title || '',
+            content: newNoteData.content || '',
+            checklist: newNoteData.checklist || [],
+            color: newNoteData.color || 'default',
+            isPinned: newNoteData.isPinned || false,
+            imageUrl: newNoteData.imageUrl || '',
+            tags: newNoteData.tags || [],
+            ownerId: user.id,
+            createdAt: Date.now()
+        });
+        showToast("Đã lưu ghi chú mới thành công!");
+    } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, 'notes');
+    }
   };
 
-  const handleUpdateNote = (updatedNote: Note) => {
-    setNotes(prev => prev.map(n => n.id === updatedNote.id ? updatedNote : n));
+  const handleUpdateNote = async (updatedNote: Note) => {
+    if (!user || user.id.startsWith('user-') || updatedNote.id.startsWith('note-')) {
+        setNotes(prev => prev.map(n => n.id === updatedNote.id ? updatedNote : n));
+        return;
+    }
+
+    try {
+        const { id, ...data } = updatedNote;
+        await updateDoc(doc(db, 'notes', id), {
+            title: data.title || '',
+            content: data.content || '',
+            checklist: data.checklist || [],
+            color: data.color || 'default',
+            isPinned: data.isPinned || false,
+            imageUrl: data.imageUrl || '',
+            tags: data.tags || []
+        });
+    } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, 'notes');
+    }
   };
   
-  const handleTogglePin = (noteId: string) => {
-    setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isPinned: !n.isPinned } : n));
+  const handleTogglePin = async (noteId: string) => {
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+
+    if (!user || user.id.startsWith('user-') || noteId.startsWith('note-')) {
+        setNotes(prev => prev.map(n => n.id === noteId ? { ...n, isPinned: !n.isPinned } : n));
+        return;
+    }
+
+    try {
+        await updateDoc(doc(db, 'notes', noteId), {
+            isPinned: !note.isPinned
+        });
+    } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, 'notes');
+    }
   };
 
-  const handleDeleteNote = (noteId: string) => {
+  const handleDeleteNote = async (noteId: string) => {
     if (confirm("Bạn có chắc chắn muốn xóa ghi chú này?")) {
-      setNotes(prev => prev.filter(n => n.id !== noteId));
-      showToast("Đã xóa ghi chú!");
+      if (!user || user.id.startsWith('user-') || noteId.startsWith('note-')) {
+          setNotes(prev => prev.filter(n => n.id !== noteId));
+          showToast("Đã xóa ghi chú!");
+          return;
+      }
+
+      try {
+          await deleteDoc(doc(db, 'notes', noteId));
+          showToast("Đã xóa ghi chú!");
+      } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, 'notes');
+      }
     }
   };
 
@@ -985,6 +1172,16 @@ const NotesView: React.FC = () => {
 
                <button
                  type="button"
+                 onClick={handleSyncWithKeep}
+                 disabled={isSyncingKeep}
+                 className="px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 active:scale-95 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all shrink-0 cursor-pointer disabled:opacity-50"
+               >
+                 <RefreshCcw className={`w-3.5 h-3.5 text-orange-500 ${isSyncingKeep ? 'animate-spin' : ''}`} />
+                 <span>{isSyncingKeep ? 'Đang đồng bộ...' : 'Đồng bộ Google Keep'}</span>
+               </button>
+
+               <button
+                 type="button"
                  onClick={() => setIsCreateModalOpen(true)}
                  className="px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-900 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 active:scale-95 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all shrink-0 cursor-pointer"
                >
@@ -1096,7 +1293,7 @@ const NotesView: React.FC = () => {
           onClick={saveEditModal}
         >
           <div 
-            className={`w-full max-w-xl rounded-2xl border shadow-2xl flex flex-col overflow-hidden max-h-[85vh] animate-scale-in ${modalActiveColor.bg} ${modalActiveColor.border}`}
+            className={`w-[80%] h-[80%] rounded-2xl border shadow-2xl flex flex-col overflow-hidden animate-scale-in ${modalActiveColor.bg} ${modalActiveColor.border}`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Optional image banner at top */}
@@ -1450,6 +1647,8 @@ const NotesView: React.FC = () => {
                 </button>
               </div>
 
+              {/* Google Drive Picker inside Modal */}
+              <GooglePickerButton onPicked={handleModalPicked} variant="icon" className="p-1 border border-slate-200 dark:border-slate-800" />
             </div>
           </div>
         </div>
@@ -1464,7 +1663,7 @@ const NotesView: React.FC = () => {
           }}
         >
           <div 
-            className="w-full max-w-xl animate-scale-in"
+            className="w-[80%] h-[80%] animate-scale-in flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <CreateNote 
@@ -1491,7 +1690,7 @@ const NotesView: React.FC = () => {
             onClick={() => setSharingNote(null)}
           >
             <div 
-              className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-2xl animate-scale-in"
+              className="w-[80%] h-[80%] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-2xl animate-scale-in flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-4">

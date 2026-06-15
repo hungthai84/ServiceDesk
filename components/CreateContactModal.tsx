@@ -40,9 +40,9 @@ const CreateContactModal: React.FC<CreateContactModalProps> = ({ onClose, onSave
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 flex justify-center items-center p-4" aria-modal="true" role="dialog">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9999] flex justify-center items-center p-4" aria-modal="true" role="dialog">
       <div className="absolute inset-0" onClick={onClose}></div>
-      <form onSubmit={handleSave} className="relative w-full max-w-lg bg-[--color-surface-tertiary] backdrop-blur-2xl rounded-xl shadow-2xl flex flex-col animate-fade-in-up max-h-full">
+      <form onSubmit={handleSave} className="relative w-[80%] h-[80%] bg-[--color-surface-tertiary] backdrop-blur-2xl rounded-xl shadow-2xl flex flex-col animate-fade-in-up">
         <header className="p-4 border-b border-[--color-border-secondary] flex justify-between items-center shrink-0">
           <h2 className="text-lg font-semibold text-[--color-text-primary] flex items-center gap-2">
             <UserPlusIcon className="w-6 h-6" />

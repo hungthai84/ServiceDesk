@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { AppNotification, User } from '../App';
+import { AppNotification, User } from '../types';
 import { BellIcon, CheckCircleIcon, XIcon } from './icons';
 
 interface NotificationToastProps {

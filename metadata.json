@@ -1,9 +1,8 @@
 {
-  "name": "Remix: Service Desk Manager [Đang làm]",
-  "description": "Phần mềm làm việc giành cho nhân viên Power Service One ",
+  "name": "Power Service SDP Platfrom",
+  "description": "Phần mềm quản lý dịch vụ khách hàng Power Service SDP Platfrom",
   "requestFramePermissions": [
     "geolocation",
-    "microphone",
     "publickey-credentials-get"
   ],
   "prompt": "",

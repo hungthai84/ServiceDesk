@@ -54,14 +54,14 @@ const CalendarIcon = () => (
 
 const CalendarBanner: React.FC = () => {
   return (
-    <div className="relative py-1.5 px-4 sm:py-2.5 sm:px-6 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-700 text-white overflow-hidden shadow-lg w-full">
+    <div className="relative py-3 px-6 sm:py-4 sm:px-8 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-700 text-white overflow-hidden shadow-lg w-full">
       <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-white/10 rounded-full opacity-50 z-0" aria-hidden="true"></div>
       <div className="absolute top-4 -right-12 w-24 h-24 bg-white/10 rounded-lg opacity-50 z-0 rotate-45" aria-hidden="true"></div>
       
-      <div className="relative z-10 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <div className="relative z-10 flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="text-center sm:text-left">
-          <h1 className="text-lg sm:text-xl font-bold">Lịch</h1>
-          <p className="mt-0.5 text-xs text-indigo-100 max-w-md italic">
+          <h1 className="text-3xl font-bold">Lịch</h1>
+          <p className="mt-2 text-indigo-100 max-w-md italic">
             “Lịch là bản đồ của hành động – gắn liền mọi hoạt động, không bỏ sót một giờ nào.”
           </p>
         </div>

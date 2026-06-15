@@ -262,8 +262,8 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ user, isOpen, onClose
     ];
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-xl my-8 overflow-hidden animate-fade-in-up border border-slate-100 dark:border-slate-800">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[80%] h-[80%] my-8 overflow-hidden animate-fade-in-up border border-slate-100 dark:border-slate-800 flex flex-col">
                 <div className="flex justify-between items-center px-6 py-4.3 border-b border-gray-100 dark:border-slate-800">
                     <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         {postTypes.find(pt => pt.value === type)?.icon}

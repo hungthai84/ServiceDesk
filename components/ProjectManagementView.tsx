@@ -30,6 +30,7 @@ interface ProjectData {
   taskListId?: string;
   taskListIds?: string[];
   department?: 'IT' | 'Marketing' | 'HR' | '';
+  dependencyIds?: string[];
 }
 
 const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, onNavigateToTasks, onSendNotification }) => {
@@ -77,6 +78,7 @@ const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, onN
   const [formParentId, setFormParentId] = useState<string>('');
   const [formTaskListIds, setFormTaskListIds] = useState<string[]>([]);
   const [formDepartment, setFormDepartment] = useState<'IT' | 'Marketing' | 'HR' | ''>('');
+  const [formDependencyIds, setFormDependencyIds] = useState<string[]>([]);
 
   // Filtering department state
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
@@ -175,6 +177,7 @@ const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, onN
     setFormParentId(parentId);
     setFormTaskListIds([]);
     setFormDepartment('');
+    setFormDependencyIds([]);
     setTaskListDropdownOpen(false);
     setTaskListSearchTerm('');
     setIsModalOpen(true);
@@ -197,6 +200,7 @@ const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, onN
       setFormTaskListIds([]);
     }
     setFormDepartment(project.department || '');
+    setFormDependencyIds(project.dependencyIds || []);
     setTaskListDropdownOpen(false);
     setTaskListSearchTerm('');
     setIsModalOpen(true);
@@ -225,6 +229,7 @@ const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, onN
         taskListId: formTaskListIds.length > 0 ? formTaskListIds[0] : null,
         taskListIds: formTaskListIds,
         department: formDepartment || null,
+        dependencyIds: formDependencyIds,
       };
 
       if (modalMode === 'add') {
@@ -455,6 +460,9 @@ const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, onN
         endDays,
         progress,
         color,
+        description: p.description,
+        taskListIds: p.taskListIds || (p.taskListId ? [p.taskListId] : []),
+        dependencyIds: p.dependencyIds || [],
       };
     }).sort((a, b) => a.startDays - b.startDays);
   };
@@ -1478,6 +1486,44 @@ const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, onN
                               })}
                             </div>
 
+                            {/* Dependencies SVG layer */}
+                            <svg className="absolute inset-0 pointer-events-none z-10 w-full" style={{ height: `${timelineData.length * 64}px` }}>
+                              <defs>
+                                {timelineData.map(p => (
+                                  <marker key={`marker-${p.id}`} id={`arrow-${p.id}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill={p.color} opacity="0.6" />
+                                  </marker>
+                                ))}
+                              </defs>
+                              {timelineData.map((project, i) => (
+                                project.dependencyIds?.map(depId => {
+                                  const depIndex = timelineData.findIndex(p => p.id === depId);
+                                  if (depIndex === -1) return null;
+                                  const depProject = timelineData[depIndex];
+                                  const startX = depProject.endDays * 44;
+                                  const startY = depIndex * 64 + 32;
+                                  const endX = project.startDays * 44;
+                                  const endY = i * 64 + 32;
+                                  
+                                  // Draw curved line connecting them
+                                  const midX = startX + Math.max(20, (endX - startX) / 2);
+                                  
+                                  return (
+                                    <path
+                                      key={`${depId}-${project.id}`}
+                                      d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
+                                      fill="none"
+                                      stroke={depProject.color}
+                                      strokeWidth="2"
+                                      strokeOpacity="0.6"
+                                      strokeDasharray="4 4"
+                                      markerEnd={`url(#arrow-${depProject.id})`}
+                                    />
+                                  );
+                                })
+                              ))}
+                            </svg>
+
                             {timelineData.map((project) => {
                               const barLeft = project.startDays * 44;
                               const barWidth = Math.max(34, (project.endDays - project.startDays) * 44);
@@ -1855,6 +1901,37 @@ const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, onN
                             </select>
                         </div>
                         <div>
+                            <label className="block text-sm font-semibold text-[--color-text-secondary] mb-1.5">Tiền quyết (Phụ thuộc vào)</label>
+                            <div className="relative">
+                                <div className="border border-[--color-border-secondary] bg-[--color-surface-primary] rounded-lg p-2 max-h-32 overflow-y-auto w-full text-sm">
+                                    {projects.filter(p => p.id !== editingId).length === 0 ? (
+                                        <span className="text-[--color-text-subtle] italic">Không có dự án nào khác</span>
+                                    ) : (
+                                        projects.filter(p => p.id !== editingId).map(p => (
+                                            <label key={p.id} className="flex items-center gap-2 mb-1 cursor-pointer hover:bg-[--color-surface-secondary] px-1 py-0.5 rounded">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={formDependencyIds.includes(p.id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setFormDependencyIds([...formDependencyIds, p.id]);
+                                                        } else {
+                                                            setFormDependencyIds(formDependencyIds.filter(id => id !== p.id));
+                                                        }
+                                                    }}
+                                                    className="rounded border-[--color-border-secondary] text-[--color-accent-600] focus:ring-[--color-accent-500]"
+                                                />
+                                                <span className="truncate">{p.name}</span>
+                                            </label>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
                             <label className="block text-sm font-semibold text-[--color-text-secondary] mb-1.5">Trạng thái</label>
                             <select 
                                 value={formStatus}
@@ -1866,9 +1943,6 @@ const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, onN
                                 <option value="completed">Đã hoàn thành (Completed)</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label className="block text-sm font-semibold text-[--color-text-secondary] mb-1.5">Ngày bắt đầu (Tự động hoặc tùy chọn)</label>
                             <input 

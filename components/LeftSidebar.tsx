@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { HomeIcon, CalendarIcon, StickyNoteIcon, ChecklistIcon, UsersIcon, FolderIcon, BookOpenIcon, RssIcon, GraduationCapIcon, XIcon, ClipboardListIcon, ChevronDownIcon, ChevronUpIcon, SitemapIcon, WorkflowIcon } from './icons';
-import { View, RecentItem } from '../App';
+import { HomeIcon, CalendarIcon, StickyNoteIcon, ChecklistIcon, UsersIcon, FolderIcon, BookOpenIcon, RssIcon, GraduationCapIcon, XIcon, ClipboardListIcon, ChevronDownIcon, ChevronUpIcon, SitemapIcon, WorkflowIcon, ChevronLeftIcon, ChevronRightIcon } from './icons';
+import { View, RecentItem, User } from '../types';
 import { useLanguage } from './LanguageContext';
+import UserMenu from './UserMenu';
 
 // --- Sidebar Components ---
 
@@ -26,31 +27,59 @@ interface LeftSidebarProps {
   isCollapsed: boolean;
   isMobileOpen: boolean;
   onClose: () => void;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
+  onToggleCollapse: () => void;
   activeView: View;
   onNavigate: (view: View, section?: string) => void;
   recentlyViewed: RecentItem[];
   onAiClick?: () => void;
   isAiOpen?: boolean;
+  user: User;
+  onLogout: () => void;
 }
 
-const LeftSidebar: React.FC<LeftSidebarProps> = ({ isCollapsed, isMobileOpen, onClose, onMouseEnter, onMouseLeave, activeView, onNavigate, recentlyViewed, onAiClick, isAiOpen }) => {
+const LeftSidebar: React.FC<LeftSidebarProps> = ({ 
+  isCollapsed, 
+  onToggleCollapse, 
+  isMobileOpen, 
+  onClose, 
+  activeView, 
+  onNavigate, 
+  recentlyViewed, 
+  onAiClick, 
+  isAiOpen,
+  user,
+  onLogout
+}) => {
   const { t } = useLanguage();
   const [isRecentExpanded, setIsRecentExpanded] = useState(true);
 
   return (
     <div 
         className={`fixed inset-y-0 left-0 z-40 md:relative md:z-20 shrink-0 transition-transform duration-300 ease-in-out md:transform-none ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
     >
-      <aside className={`flex flex-col p-[5px] bg-transparent backdrop-blur-lg border-r border-[--color-border-secondary] h-full transition-all duration-300 ease-in-out w-64 md:${isCollapsed ? 'w-20' : 'w-64'}`}>
+      <aside className={`relative flex flex-col p-[5px] bg-transparent h-full transition-all duration-300 ease-in-out shrink-0 w-[190px] md:${isCollapsed ? 'w-20' : 'w-[190px]'}`}>
+        
+        {/* Toggle Button */}
+        <button 
+          onClick={onToggleCollapse}
+          className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full hidden md:flex items-center justify-center shadow-md hover:bg-slate-50 dark:hover:bg-slate-700 transition-all z-50 group"
+        >
+          {isCollapsed ? (
+            <ChevronRightIcon className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-500" />
+          ) : (
+            <ChevronLeftIcon className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-500" />
+          )}
+        </button>
+
         <div className="flex items-center justify-end mb-6 md:hidden">
             <button onClick={onClose} className="p-2 rounded-full hover:bg-black/10">
                 <XIcon className="w-6 h-6 text-[--color-text-secondary]" />
             </button>
         </div>
+
+        {/* Spacing on Desktop when Brand Logo is moved to TopSidebar */}
+        <div className="hidden md:block h-3"></div>
+
         <nav className="flex-grow flex flex-col justify-center gap-[5px] overflow-y-auto no-scrollbar">
           <NavItem icon={<HomeIcon className="w-5 h-5 shrink-0 text-indigo-500" />} label={t('dashboard')} active={activeView === 'dashboard'} isCollapsed={isCollapsed} onClick={() => onNavigate('dashboard')} />
           <NavItem icon={<RssIcon className="w-5 h-5 shrink-0 text-orange-500" />} label={t('newsfeed')} active={activeView === 'newsfeed'} isCollapsed={isCollapsed} onClick={() => onNavigate('newsfeed')} />
@@ -92,49 +121,63 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ isCollapsed, isMobileOpen, on
           )}
         </nav>
 
-        {onAiClick && (
-          <div className={`mt-auto pt-4 border-t border-[--color-border-secondary]/60 flex flex-col items-center shrink-0 ${isCollapsed ? 'opacity-100' : ''}`}>
-            {!isCollapsed ? (
-              <button
-                onClick={onAiClick}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r ${
-                  isAiOpen 
-                    ? 'from-indigo-500/20 to-purple-500/20 border-[--color-accent-500]' 
-                    : 'from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/18 hover:to-purple-500/18 border-[--color-border-secondary]'
-                } border transition-all duration-300 transform active:scale-95 text-left`}
-              >
-                <div className="relative w-11 h-11 rounded-full overflow-hidden shrink-0 border border-purple-500/30">
+        {/* Bottom Section: Profile + AI Assistant */}
+        <div className="mt-auto pt-3 border-t border-[--color-border-secondary]/60 flex flex-col gap-2.5 shrink-0">
+          {/* User Profile placed above AI */}
+          <div className={`flex items-center gap-2.5 w-full p-1 rounded-xl transition-all ${!isCollapsed ? 'bg-slate-100/30 dark:bg-slate-800/30 border border-[--color-border-secondary]/40 px-2 py-1.5' : 'justify-center'}`}>
+            <UserMenu user={user} onLogout={onLogout} onNavigate={onNavigate} direction="up" />
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0 flex flex-col text-left">
+                <span className="text-sm font-semibold text-[--color-text-primary] truncate leading-tight">{user.name}</span>
+                <span className="text-[10px] text-[--color-text-subtle] truncate font-medium uppercase tracking-wider mt-0.5">{user.role || 'Member'}</span>
+              </div>
+            )}
+          </div>
+
+          {onAiClick && (
+            <div className="flex flex-col items-center shrink-0 w-full animate-fade-in-up">
+              {!isCollapsed ? (
+                <button
+                  onClick={onAiClick}
+                  className={`w-full flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r ${
+                    isAiOpen 
+                      ? 'from-indigo-500/20 to-purple-500/20 border-[--color-accent-500]' 
+                      : 'from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/18 hover:to-purple-500/18 border-[--color-border-secondary]'
+                  } border transition-all duration-300 transform active:scale-95 text-left`}
+                >
+                  <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 border border-purple-500/30">
+                    <img 
+                      src="https://i.ibb.co/x8Spz9Qm/Avata-AI-POW.gif" 
+                      alt="AI Assistant"
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold text-[--color-text-primary] flex items-center gap-1">
+                      Trợ lý ảo AI
+                      <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+                    </div>
+                    <div className="text-[10px] text-[--color-text-subtle] truncate">Trò chuyện & hỗ trợ...</div>
+                  </div>
+                </button>
+              ) : (
+                <button
+                  onClick={onAiClick}
+                  className={`w-10 h-10 rounded-full overflow-hidden shrink-0 border transition-all duration-300 ${
+                    isAiOpen ? 'border-[--color-accent-500] ring-2 ring-[--color-accent-500]/50' : 'border-purple-500/30 hover:shadow-lg hover:scale-105'
+                  }`}
+                  title="Trợ lý ảo AI"
+                >
                   <img 
                     src="https://i.ibb.co/x8Spz9Qm/Avata-AI-POW.gif" 
                     alt="AI Assistant"
                     className="w-full h-full object-cover" 
                   />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-[--color-text-primary] flex items-center gap-1.5">
-                    Trợ lý ảo AI
-                    <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                  </div>
-                  <div className="text-xs text-[--color-text-subtle] truncate">Trò chuyện & hỗ trợ...</div>
-                </div>
-              </button>
-            ) : (
-              <button
-                onClick={onAiClick}
-                className={`w-12 h-12 rounded-full overflow-hidden shrink-0 border transition-all duration-300 ${
-                  isAiOpen ? 'border-[--color-accent-500] ring-2 ring-[--color-accent-500]/50' : 'border-purple-500/30 hover:shadow-lg hover:scale-105'
-                }`}
-                title="Trợ lý ảo AI"
-              >
-                <img 
-                  src="https://i.ibb.co/x8Spz9Qm/Avata-AI-POW.gif" 
-                  alt="AI Assistant"
-                  className="w-full h-full object-cover" 
-                />
-              </button>
-            )}
-          </div>
-        )}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </aside>
     </div>
   );

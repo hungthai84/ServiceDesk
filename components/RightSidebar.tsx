@@ -1,7 +1,7 @@
 import React from 'react';
 import { CheckCircleIcon, ChevronLeftIcon, XIcon, BellIcon } from './icons';
 import { useLanguage } from './LanguageContext';
-import { ActivityItem, AppNotification, User } from '../App';
+import { ActivityItem, AppNotification, User } from '../types';
 
 const getInitials = (name: string) => {
     const names = name.split(' ');
@@ -135,7 +135,7 @@ const RightSidebar: React.FC<RightSidebarProps> = (props) => {
 
       <button
           onClick={onToggle}
-          className="absolute top-1/2 -left-3 -translate-y-1/2 bg-[--color-surface-secondary] hover:bg-[--color-accent-500] text-[--color-text-secondary] hover:text-white w-6 h-6 rounded-full hidden md:flex items-center justify-center z-30 ring-4 ring-[--color-background-body] transition-all duration-300 ease-in-out"
+          className="absolute top-1/2 -left-3 -translate-y-1/2 bg-[--color-surface-secondary] hover:bg-[--color-accent-500] text-[--color-text-secondary] hover:text-white w-6 h-6 rounded-full hidden md:flex items-center justify-center z-30 shadow-md transition-all duration-300 ease-in-out"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <ChevronLeftIcon className={`w-4 h-4 transition-transform duration-300 ${!isCollapsed ? 'rotate-180' : ''}`} />

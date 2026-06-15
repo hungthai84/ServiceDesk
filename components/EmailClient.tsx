@@ -174,9 +174,9 @@ const EmailClient: React.FC<EmailClientProps> = ({ user, onItemViewed }) => {
                 const detail = await msgDetail.json();
                 
                 const headers = detail.payload.headers;
-                const subject = headers.find((h: any) => h.name === 'Subject')?.value || 'No Subject';
-                const fromHeader = headers.find((h: any) => h.name === 'From')?.value || 'Unknown sender';
-                const dateHeader = headers.find((h: any) => h.name === 'Date')?.value || new Date().toISOString();
+                const subject = headers.find((h: { name: string; value: string; }) => h.name === 'Subject')?.value || 'No Subject';
+                const fromHeader = headers.find((h: { name: string; value: string; }) => h.name === 'From')?.value || 'Unknown sender';
+                const dateHeader = headers.find((h: { name: string; value: string; }) => h.name === 'Date')?.value || new Date().toISOString();
                 
                 // Parse Sender "Name <email@a.b>"
                 let senderName = fromHeader;
@@ -193,7 +193,7 @@ const EmailClient: React.FC<EmailClientProps> = ({ user, onItemViewed }) => {
                     // Try to decode base64url
                     bodyHtml = decodeURIComponent(escape(atob(detail.payload.body.data.replace(/-/g, '+').replace(/_/g, '/'))));
                 } else if (detail.payload.parts) {
-                    const htmlPart = detail.payload.parts.find((p: any) => p.mimeType === 'text/html');
+                    const htmlPart = detail.payload.parts.find((p: { mimeType: string; body?: { data?: string; } }) => p.mimeType === 'text/html');
                     if (htmlPart?.body?.data) {
                         bodyHtml = decodeURIComponent(escape(atob(htmlPart.body.data.replace(/-/g, '+').replace(/_/g, '/'))));
                     }

@@ -1,19 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Banner from './Banner';
-import { User, RecentItem, View, CheckInEntry, ActivityItem } from '../App';
+import { User, RecentItem, View, CheckInEntry, ActivityItem } from '../types';
 import { useLanguage } from './LanguageContext';
 import { CalendarEvent } from './CalendarView';
-import { mockTaskLists } from './TasklistView';
+import { mockTaskLists, Task } from './TasklistView';
 import { mockNotes } from './NotesView';
 import { initialFileSystem } from './DriveView';
 import { mockEmails } from './EmailClient';
 import { initialMeetings } from './MeetingView';
 import { mockClasses } from './TrainingDashboardView';
-import { SettingsIcon, XIcon, ChevronRightIcon, ChevronUpIcon, ChevronDownIcon, FileTextIcon, GripVerticalIcon, RssIcon, FolderIcon, ChecklistIcon, CalendarIcon, StickyNoteIcon, BookOpenIcon, GraduationCapIcon, MailIcon, ChatIcon } from './icons';
+import { SettingsIcon, XIcon, ChevronRightIcon, ChevronUpIcon, ChevronDownIcon, FileTextIcon, GripVerticalIcon, RssIcon, FolderIcon, ChecklistIcon, CalendarIcon, StickyNoteIcon, BookOpenIcon, GraduationCapIcon, MailIcon, ChatIcon, ZapIcon, ClockIcon } from './icons';
 import { motion, Reorder, AnimatePresence } from 'motion/react';
 import { auth, db } from '../firebase';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, onSnapshot } from 'firebase/firestore';
 import { Post } from './NewsfeedView';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 
 // --- WIDGET COMPONENTS ---
 
@@ -255,7 +256,235 @@ const UnreadChatWidget: React.FC<{ onNavigate: () => void }> = ({ onNavigate }) 
             ) : <p className="text-sm text-center text-[--color-text-subtle] mt-8">Không có tin nhắn mới.</p>}
         </WidgetCard>
     );
-}
+};
+
+const RecentTasksWidget: React.FC<{ onNavigate: () => void }> = ({ onNavigate }) => {
+    const [recentTasks, setRecentTasks] = useState<Task[]>([]);
+
+    useEffect(() => {
+        if (!auth.currentUser) return;
+        const fetchRecentTasks = async () => {
+            try {
+                const q = query(collection(db, 'tasks'), orderBy('updatedAt', 'desc'), limit(5));
+                const snapshot = await getDocs(q);
+                const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+                setRecentTasks(tasks);
+            } catch (err) {
+                console.error("Error fetching recent tasks:", err);
+            }
+        };
+        fetchRecentTasks();
+    }, []);
+
+    return (
+        <WidgetCard title="Công việc vừa xong" icon={<ClockIcon className="w-5 h-5 text-blue-500" />} onNavigate={onNavigate}>
+            {recentTasks.length > 0 ? (
+                <div className="space-y-2">
+                    {recentTasks.map(task => (
+                        <div key={task.id} className="p-2.5 bg-[--color-surface-primary] rounded-xl border border-[--color-border-primary] flex items-center justify-between">
+                            <div className="flex-1 truncate">
+                                <p className="font-semibold text-sm text-[--color-text-primary] truncate">{task.text}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${task.priority === 'Cao' ? 'bg-red-100 text-red-600' : task.priority === 'Thấp' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+                                        {task.priority || 'Trung bình'}
+                                    </span>
+                                    <span className="text-[10px] text-[--color-text-subtle]">{task.status || 'Cần làm'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : <p className="text-sm text-center text-[--color-text-subtle] mt-8">Không có dữ liệu.</p>}
+        </WidgetCard>
+    );
+};
+
+const DailyActivitySummaryWidget: React.FC<{ events: CalendarEvent[]; onNavigate?: () => void }> = ({ events }) => {
+    const stats = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const scheduledMeetings = events.filter(e => e.date >= today && e.date < tomorrow).length;
+        const completedTasks = mockTaskLists.flatMap(l => l.tasks).filter(tk => tk.completed).length; // Mock count
+        
+        return { scheduledMeetings, completedTasks };
+    }, [events]);
+
+    return (
+        <WidgetCard title="Tổng quan ngày" icon={<ZapIcon className="w-5 h-5 text-yellow-400" />}>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-[--color-surface-primary] rounded-xl flex flex-col items-center justify-center text-center">
+                    <span className="text-2xl font-bold text-[--color-accent-600]">{stats.completedTasks}</span>
+                    <span className="text-[10px] uppercase font-bold text-[--color-text-subtle]">Công việc đã xong</span>
+                </div>
+                <div className="p-3 bg-[--color-surface-primary] rounded-xl flex flex-col items-center justify-center text-center">
+                    <span className="text-2xl font-bold text-indigo-600">{stats.scheduledMeetings}</span>
+                    <span className="text-[10px] uppercase font-bold text-[--color-text-subtle]">Cuộc họp hôm nay</span>
+                </div>
+            </div>
+        </WidgetCard>
+    );
+};
+
+const WeeklySummaryChartWidget: React.FC<{ events: CalendarEvent[]; onNavigate?: () => void }> = ({ events }) => {
+    const data = useMemo(() => {
+        const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        const today = new Date();
+        const result = [];
+        
+        // Go back 6 days + today
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            date.setHours(0,0,0,0);
+            
+            const nextDay = new Date(date);
+            nextDay.setDate(nextDay.getDate() + 1);
+            
+            // Mock tasks count: randomish for past days, based on real data for today
+            const isToday = i === 0;
+            const completedTasks = isToday 
+                ? mockTaskLists.flatMap(l => l.tasks).filter(t => t.completed).length 
+                : Math.floor(Math.random() * 8) + 2;
+
+            const dayEvents = events.filter(e => {
+                const eDate = new Date(e.date);
+                eDate.setHours(0,0,0,0);
+                return eDate.getTime() === date.getTime();
+            }).length;
+            
+            const randomEvents = Math.floor(Math.random() * 4); // Mock for history
+            
+            result.push({
+                name: days[date.getDay()],
+                tasks: completedTasks,
+                events: isToday ? dayEvents : randomEvents
+            });
+        }
+        return result;
+    }, [events]);
+
+    return (
+        <WidgetCard title="Tổng quan tuần" icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>} className="md:col-span-2">
+            <div className="h-48 w-full mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-secondary)" opacity={0.5} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }} />
+                        <Tooltip 
+                            contentStyle={{ backgroundColor: 'var(--color-surface-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: '8px', fontSize: '12px' }}
+                            cursor={{ fill: 'var(--color-surface-tertiary)', opacity: 0.4 }}
+                        />
+                        <Bar dataKey="tasks" name="Việc đã xong" fill="var(--color-accent-500)" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                        <Bar dataKey="events" name="Sự kiện" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+        </WidgetCard>
+    );
+};
+
+const TeamTaskKpiWidget: React.FC<{ onNavigate?: () => void }> = () => {
+    const [stats, setStats] = useState<{ name: string; completed: number; total: number; pct: number }[]>([]);
+
+    useEffect(() => {
+        let unsubscribe: () => void = () => {};
+
+        const processTasksToStats = (tasksList: Task[]) => {
+            const assigneeGroups: Record<string, { completed: number; total: number }> = {};
+            const defaultTeam = ['Hùng Thái', 'Lan Anh', 'Minh Tuấn', 'Phương Thảo', 'Quốc Bảo'];
+            
+            defaultTeam.forEach(name => {
+                assigneeGroups[name] = { completed: 0, total: 0 };
+            });
+
+            tasksList.forEach(t => {
+                const name = t.assigneeName || 'Chưa phân công';
+                if (!assigneeGroups[name]) {
+                    assigneeGroups[name] = { completed: 0, total: 0 };
+                }
+                assigneeGroups[name].total += 1;
+                if (t.completed) {
+                    assigneeGroups[name].completed += 1;
+                }
+            });
+
+            const result = Object.entries(assigneeGroups).map(([name, group]) => {
+                const pct = group.total > 0 ? Math.round((group.completed / group.total) * 100) : 0;
+                
+                if (group.total === 0) {
+                    const mockBaselines: Record<string, { completed: number; total: number; pct: number }> = {
+                        'Hùng Thái': { completed: 12, total: 15, pct: 80 },
+                        'Lan Anh': { completed: 8, total: 10, pct: 80 },
+                        'Minh Tuấn': { completed: 14, total: 20, pct: 70 },
+                        'Phương Thảo': { completed: 9, total: 12, pct: 75 },
+                        'Quốc Bảo': { completed: 5, total: 5, pct: 100 },
+                        'Chưa phân công': { completed: 1, total: 4, pct: 25 },
+                    };
+                    const baseline = mockBaselines[name] || { completed: 4, total: 6, pct: 66 };
+                    return {
+                        name,
+                        completed: baseline.completed,
+                        total: baseline.total,
+                        pct: baseline.pct
+                    };
+                }
+
+                return {
+                    name,
+                    completed: group.completed,
+                    total: group.total,
+                    pct
+                };
+            });
+
+            setStats(result);
+        };
+
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+            const localTasks = mockTaskLists.flatMap(l => l.tasks);
+            processTasksToStats(localTasks);
+        } else {
+            const q = query(collection(db, 'tasks'));
+            unsubscribe = onSnapshot(q, (snapshot) => {
+                const tasks = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                } as Task));
+                processTasksToStats(tasks);
+            }, (error) => {
+                console.error("Error loading KPI tasks:", error);
+                processTasksToStats(mockTaskLists.flatMap(l => l.tasks));
+            });
+        }
+
+        return () => unsubscribe();
+    }, []);
+
+    return (
+        <WidgetCard title="Hiệu suất hoàn thành công việc" icon={<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500"><path d="M12 20h9"/><path d="M3 20v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"/><path d="M13 20v-4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"/></svg>} className="md:col-span-2">
+            <div className="h-48 w-full mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={stats} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border-secondary)" opacity={0.5} />
+                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }} dy={10} />
+                        <YAxis axisLine={false} tickLine={false} type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: 'var(--color-text-secondary)' }} tickFormatter={(tick) => `${tick}%`} />
+                        <Tooltip 
+                            contentStyle={{ backgroundColor: 'var(--color-surface-secondary)', border: '1px solid var(--color-border-primary)', borderRadius: '8px', fontSize: '12px' }}
+                            cursor={{ fill: 'var(--color-surface-tertiary)', opacity: 0.4 }}
+                            formatter={(value: number) => [`${value}%`, 'Tỷ lệ hoàn thành']}
+                        />
+                        <Bar dataKey="pct" name="Tỷ lệ hoàn thành" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+        </WidgetCard>
+    );
+};
 
 // --- MAIN COMPONENT ---
 interface MainContentProps {
@@ -295,6 +524,10 @@ const MainContent: React.FC<MainContentProps> = ({ user, recentlyViewed, events,
       { id: 'widget_training', name: t('training'), description: t('widget_training_desc'), component: UpcomingClassWidget, defaultVisible: false, props: { onNavigate: () => onNavigate('training') } },
       { id: 'widget_email', name: t('email'), description: t('widget_email_desc'), component: UnreadEmailsWidget, defaultVisible: true, props: { onNavigate: () => onNavigate('email') } },
       { id: 'widget_chat', name: t('chat'), description: t('widget_chat_desc'), component: UnreadChatWidget, defaultVisible: true, props: { onNavigate: () => onNavigate('chat') } },
+      { id: 'widget_recent_tasks', name: 'Việc mới cập nhật', description: 'Hiển thị 5 công việc vừa được cập nhật gần đây nhất', component: RecentTasksWidget, defaultVisible: true, props: { onNavigate: () => onNavigate('tasks') } },
+      { id: 'widget_daily_summary', name: 'Tổng quan ngày', description: 'Tóm tắt công việc và cuộc họp hôm nay', component: DailyActivitySummaryWidget, defaultVisible: true, props: { events, onNavigate: () => onNavigate('tasks') } },
+      { id: 'widget_weekly_summary', name: 'Tổng quan tuần', description: 'Biểu đồ tóm tắt công việc và sự kiện trong tuần', component: WeeklySummaryChartWidget, defaultVisible: true, props: { events, onNavigate: () => onNavigate('tasks') } },
+      { id: 'widget_team_task_kpi', name: 'Hiệu suất nhóm (KPI)', description: 'Biểu đồ KPI theo dõi tỷ lệ hoàn thành công việc của nhóm', component: TeamTaskKpiWidget, defaultVisible: true, props: { onNavigate: () => onNavigate('tasks') } },
   ], [t, events, onNavigate]);
 
   const [widgetSettings, setWidgetSettings] = useState<WidgetSettings[]>([]);
@@ -389,9 +622,9 @@ const MainContent: React.FC<MainContentProps> = ({ user, recentlyViewed, events,
   return (
     <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] pb-24 md:pb-8">
         {isCustomizeModalOpen && (
-            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 flex justify-center items-center p-4" aria-modal="true">
+            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9999] flex justify-center items-center p-4" aria-modal="true">
                 <div className="absolute inset-0" onClick={() => setIsCustomizeModalOpen(false)}></div>
-                <div className="relative w-full max-w-lg bg-[--color-surface-tertiary] rounded-xl shadow-2xl animate-fade-in-up">
+                <div className="relative w-[80%] h-[80%] bg-[--color-surface-tertiary] rounded-xl shadow-2xl animate-fade-in-up flex flex-col">
                     <header className="p-4 border-b border-[--color-border-secondary] flex justify-between items-center">
                         <h2 className="text-lg font-bold text-[--color-text-primary]">{t('customizeDashboard')}</h2>
                         <button onClick={() => setIsCustomizeModalOpen(false)} className="p-2 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-[--color-text-secondary]"><XIcon className="w-5 h-5"/></button>

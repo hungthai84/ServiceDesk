@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from './LanguageContext';
 import { User } from '../App';
-import { ClipboardListIcon, XIcon, SparklesIcon } from './icons';
+import { ClipboardListIcon, XIcon, SparklesIcon, CalendarIcon } from './icons';
 import { GoogleGenAI } from "@google/genai";
 
 export interface Request {
@@ -16,6 +16,8 @@ export interface Request {
     approverId: string;
     approverName: string;
     summary?: string;
+    startDate?: string;
+    endDate?: string;
 }
 
 interface CreateRequestModalProps {
@@ -39,6 +41,8 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ user, users, on
     const [approverId, setApproverId] = useState('');
     const [summary, setSummary] = useState('');
     const [isSummarizing, setIsSummarizing] = useState(false);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     const handleSummarize = async () => {
         if (!content.trim()) return;
@@ -76,14 +80,16 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ user, users, on
             authorName: user.name,
             approverId: approverId,
             approverName: approver ? approver.name : 'Unknown',
+            startDate: type === 'leaveRequest' ? startDate : undefined,
+            endDate: type === 'leaveRequest' ? endDate : undefined,
         };
         onSave(newRequest);
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-fade-in-up">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fade-in-up">
             <div className="absolute inset-0" onClick={onClose}></div>
-            <div className="relative bg-[--color-surface-tertiary] border border-[--color-border-secondary] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-scale-in">
+            <div className="relative bg-[--color-surface-tertiary] border border-[--color-border-secondary] rounded-2xl shadow-2xl w-[80%] h-[80%] overflow-hidden animate-scale-in flex flex-col">
                 <div className="p-6 border-b border-[--color-border-secondary] flex justify-between items-center bg-[--color-surface-secondary]">
                     <h3 className="text-xl font-bold text-[--color-text-primary] flex items-center gap-2">
                         <ClipboardListIcon className="w-6 h-6 text-[--color-accent-500]" />
@@ -106,6 +112,37 @@ const CreateRequestModal: React.FC<CreateRequestModalProps> = ({ user, users, on
                             ))}
                         </select>
                     </div>
+
+                    {type === 'leaveRequest' && (
+                        <div className="grid grid-cols-2 gap-4 animate-fade-in">
+                            <div>
+                                <label className="block text-sm font-semibold text-[--color-text-secondary] mb-1.5 flex items-center gap-2">
+                                    <CalendarIcon className="w-4 h-4 text-blue-500" />
+                                    Từ ngày
+                                </label>
+                                <input 
+                                    required
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="w-full bg-[--color-surface-primary] border border-[--color-border-secondary] text-[--color-text-primary] rounded-lg p-3 focus:ring-2 focus:ring-[--color-accent-500] focus:border-transparent focus:outline-none transition-shadow"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-[--color-text-secondary] mb-1.5 flex items-center gap-2">
+                                    <CalendarIcon className="w-4 h-4 text-red-500" />
+                                    Đến ngày
+                                </label>
+                                <input 
+                                    required
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="w-full bg-[--color-surface-primary] border border-[--color-border-secondary] text-[--color-text-primary] rounded-lg p-3 focus:ring-2 focus:ring-[--color-accent-500] focus:border-transparent focus:outline-none transition-shadow"
+                                />
+                            </div>
+                        </div>
+                    )}
                     
                     <div>
                         <label className="block text-sm font-semibold text-[--color-text-secondary] mb-1.5">{t('selectApprover')}</label>

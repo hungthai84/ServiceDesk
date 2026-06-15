@@ -1,10 +1,12 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 
 export const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); // Fallbacks handled if ID missing
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true
+}, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
@@ -21,7 +23,17 @@ const scopes = [
   'profile',
   'https://www.googleapis.com/auth/calendar.events',
   'https://www.googleapis.com/auth/calendar.readonly',
-  'https://www.googleapis.com/auth/gmail.readonly'
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/chat.spaces',
+  'https://www.googleapis.com/auth/chat.spaces.readonly',
+  'https://www.googleapis.com/auth/chat.messages',
+  'https://www.googleapis.com/auth/chat.messages.readonly',
+  'https://www.googleapis.com/auth/classroom.courses.readonly',
+  'https://www.googleapis.com/auth/classroom.coursework.me',
+  'https://www.googleapis.com/auth/classroom.announcements',
+  'https://www.googleapis.com/auth/meetings.space.created',
+  'https://www.googleapis.com/auth/meetings.space.readonly',
+  'https://www.googleapis.com/auth/drive.metadata.readonly'
 ];
 
 scopes.forEach(scope => provider.addScope(scope));
@@ -67,7 +79,19 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
   }
 };
 
-export const getAccessToken = async (): Promise<string | null> => {
+export const getAccessToken = async (promptIfMissing = true): Promise<string | null> => {
+  if (cachedAccessToken) return cachedAccessToken;
+  
+  if (promptIfMissing) {
+    try {
+      const res = await googleSignIn();
+      if (res) return res.accessToken;
+    } catch (err) {
+      console.warn("Auto-popup failed. Please ensure popup is enabled.", err);
+      // Wait for user to interact
+    }
+  }
+
   return cachedAccessToken;
 };
 

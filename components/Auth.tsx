@@ -251,14 +251,45 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen w-full font-sans">
-      <div className="absolute inset-0 bg-[--color-background-body] z-0"></div>
-      <div className="w-full max-w-md p-8 space-y-8 bg-[--color-surface-primary] backdrop-blur-xl rounded-2xl shadow-2xl z-10 m-4">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-[--color-text-primary]">
+    <div className="flex items-center justify-center min-h-screen w-full font-sans overflow-hidden relative">
+      <div className="absolute inset-0 z-0" style={{ background: 'var(--color-background-body)' }}></div>
+      <div 
+        className="w-full max-w-md p-8 space-y-6 z-10 m-4"
+        style={{
+          background: 'rgba(255, 255, 255, 0.75)',
+          borderRadius: '16px',
+          boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+          backdropFilter: 'blur(18.2px)',
+          WebkitBackdropFilter: 'blur(18.2px)',
+          border: '1px solid rgba(255, 255, 255, 1)'
+        }}
+      >
+        {/* Brand Logo & Name */}
+        <div className="flex flex-col items-center select-none text-center">
+          <div className="relative shrink-0 flex items-center justify-center mb-3">
+            {/* Logo image with a blue border 'Logo tạo viền xanh dương như hình trong logo' */}
+            <div className="w-16 h-16 flex items-center justify-center mb-3">
+              <img 
+                src="https://i.ibb.co/5xGR71B5/e8d96cef-7540-4105-ae6c-8342dfaf5152-removebg-preview.png" 
+                alt="Power Service SDP Platfrom" 
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          </div>
+          <h1 className="text-[#474DD3] font-extrabold text-2xl uppercase tracking-tight leading-tight">
+            Power Service
+          </h1>
+          <h2 className="text-black dark:text-slate-100 font-bold text-[13px] uppercase tracking-widest mt-1">
+            SDP Platfrom
+          </h2>
+        </div>
+
+        <div className="text-center border-t border-[--color-border-secondary]/60 pt-4">
+          <h2 className="text-xl font-bold text-[--color-text-primary]">
             {isLoginView ? t('welcomeBack') : t('createYourAccount')}
           </h2>
-          <p className="mt-2 text-sm text-[--color-text-secondary]">
+          <p className="mt-1.5 text-xs text-[--color-text-secondary]">
             {isLoginView ? t('signInToContinue') : t('getStarted')}
           </p>
         </div>

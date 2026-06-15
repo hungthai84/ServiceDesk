@@ -68,14 +68,14 @@ const AnimatedTaskManagementIcon = () => (
 
 const TaskManagementBanner: React.FC = () => {
     return (
-        <div className="relative py-1.5 px-4 sm:py-2.5 sm:px-6 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white overflow-hidden shadow-lg">
+        <div className="relative py-3 px-6 sm:py-4 sm:px-8 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white overflow-hidden shadow-lg">
             <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-white/10 rounded-full z-0" aria-hidden="true"></div>
             <div className="absolute top-0 left-0 w-16 h-16 bg-white/10 rounded-lg opacity-80 z-0 rotate-12" aria-hidden="true"></div>
       
-            <div className="relative z-10 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div className="relative z-10 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="text-center sm:text-left">
-                    <h1 className="text-lg sm:text-xl font-bold">Quản lý Công việc</h1>
-                    <p className="mt-0.5 text-xs text-fuchsia-100 max-w-lg italic">
+                    <h1 className="text-3xl font-bold">Quản lý Công việc</h1>
+                    <p className="mt-2 text-fuchsia-100 max-w-lg italic">
                         “Một task – mọi thông tin – không bị rơi rụng, không cần nhớ ngoài đầu.”
                     </p>
                 </div>

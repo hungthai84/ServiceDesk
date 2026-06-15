@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-    SearchIcon, BellIcon, MenuIcon, LogoIcon, ChatIcon, MailIcon, GlobeIcon
+    SearchIcon, BellIcon, MenuIcon, ChatIcon, MailIcon, GlobeIcon
 } from './icons';
 import WeatherClock from './WeatherClock';
-import { User, View } from '../App';
+import { User, View } from '../types';
 import { useLanguage } from './LanguageContext';
 import { initialFileSystem } from './DriveView';
 import { initialContacts } from './ContactsView';
@@ -11,7 +11,6 @@ import { mockTaskLists } from './TasklistView';
 import { mockEvents } from './CalendarView';
 import { mockMessages } from './ChatView';
 import GlobalSearchResults from './GlobalSearchResults';
-import UserMenu from './UserMenu';
 
 interface TopSidebarProps {
   user: User;
@@ -33,7 +32,7 @@ interface SearchResults {
   empty?: boolean;
 }
 
-const TopSidebar: React.FC<TopSidebarProps> = ({ user, onLogout, onNotificationClick, onNavigate, onToggleMobileNav, onToggleMobileActivity, unreadCount = 0 }) => {
+const TopSidebar: React.FC<TopSidebarProps> = ({ user, onNotificationClick, onNavigate, onToggleMobileNav, onToggleMobileActivity, unreadCount = 0 }) => {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResults | null>(null);
@@ -88,11 +87,31 @@ const TopSidebar: React.FC<TopSidebarProps> = ({ user, onLogout, onNotificationC
 
 
   return (
-    <header className="flex items-center h-16 px-4 md:px-6 bg-transparent backdrop-blur-lg shrink-0 z-[60] border-b border-[--color-border-secondary]">
+    <header className="flex items-center h-16 px-4 md:px-6 bg-transparent shrink-0 z-[60]">
       
       {/* --- Desktop View --- */}
       <div className="hidden md:flex items-center h-full gap-4">
-        <UserMenu user={user} onLogout={onLogout} onNavigate={onNavigate} />
+        <div className="flex items-center gap-2.5 select-none pr-1">
+          <div className="relative shrink-0 flex items-center justify-center">
+            {/* Logo image with a blue border 'Logo tạo viền xanh dương như hình trong logo' */}
+            <div className="w-10 h-10 flex items-center justify-center">
+              <img 
+                src="https://i.ibb.co/5xGR71B5/e8d96cef-7540-4105-ae6c-8342dfaf5152-removebg-preview.png" 
+                alt="Power Service" 
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[#474DD3] dark:text-[#474DD3] font-extrabold text-[12.5px] leading-none tracking-tight uppercase whitespace-nowrap">
+              Power Service
+            </span>
+            <span className="text-black dark:text-slate-100 font-bold text-[9px] leading-none tracking-wider uppercase mt-1">
+              SDP Platfrom
+            </span>
+          </div>
+        </div>
         <div className="w-px h-8 bg-[--color-border-secondary] mx-1"></div>
         <WeatherClock />
       </div>
@@ -171,9 +190,19 @@ const TopSidebar: React.FC<TopSidebarProps> = ({ user, onLogout, onNotificationC
           <MenuIcon className="w-6 h-6 text-[--color-text-secondary]" />
         </button>
 
-         <div className="flex items-center gap-2 text-indigo-600">
-            <LogoIcon className="w-7 h-7" />
-            <span className="font-bold text-lg text-[--color-text-primary]">POW</span>
+         <div className="flex items-center gap-2 select-none">
+            <div className="w-10 h-10 flex items-center justify-center shrink-0">
+              <img 
+                src="https://i.ibb.co/5xGR71B5/e8d96cef-7540-4105-ae6c-8342dfaf5152-removebg-preview.png" 
+                alt="Power Service" 
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="font-extrabold text-[12px] text-[#474DD3] tracking-tight uppercase leading-none">Power Service</span>
+              <span className="font-bold text-[9px] text-black dark:text-slate-100 uppercase tracking-wider leading-none mt-0.5">SDP Platfrom</span>
+            </div>
         </div>
 
         <div className="flex items-center gap-1">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, ServiceState, ServiceName } from '../App';
+import { User, ServiceState, ServiceName } from '../types';
 import GoogleSyncBanner from './GoogleSyncBanner';
 import { useLanguage } from './LanguageContext';
 import { GoogleIcon, SettingsIcon } from './icons';

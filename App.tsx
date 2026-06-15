@@ -5,7 +5,7 @@ import RightSidebar from './components/RightSidebar';
 import MainContent from './components/MainContent';
 import Auth from './components/Auth';
 import EmailClient from './components/EmailClient';
-import CalendarView, { CalendarEvent } from './components/CalendarView';
+import CalendarView, { CalendarEvent, mockEvents } from './components/CalendarView';
 import ChatView from './components/ChatView';
 import NotesView from './components/NotesView';
 import TasklistView from './components/TasklistView';
@@ -29,73 +29,17 @@ import RequestsView from './components/RequestsView';
 import WebsiteDataView from './components/WebsiteDataView';
 import ProjectManagementView from './components/ProjectManagementView';
 import ProcessWorkflowView from './components/ProcessWorkflowView';
-import { FolderIcon, StickyNoteIcon, ChecklistIcon, MailIcon, CalendarIcon, GraduationCapIcon, BloggerIcon, ChatIcon, VideoIcon, IconProps } from './components/icons';
+import CommandPalette from './components/CommandPalette';
+import { FolderIcon, StickyNoteIcon, ChecklistIcon, MailIcon, CalendarIcon, GraduationCapIcon, BloggerIcon, ChatIcon, VideoIcon } from './components/icons';
 import EventModal from './components/EventModal';
 import MobileBottomNav from './components/MobileBottomNav';
-import { db, auth, googleSignIn, getAccessToken } from './firebase';
+import { motion, AnimatePresence } from 'motion/react';
+import { db, auth, getAccessToken } from './firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, addDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, addDoc, setDoc } from 'firebase/firestore';
 import NotificationToast from './components/NotificationToast';
 import { handleFirestoreError, OperationType } from './firebase-errors';
-
-
-export interface AppNotification {
-  id: string;
-  userId: string;
-  title: string;
-  message: string;
-  read: boolean;
-  createdAt: number;
-  type: 'system' | 'mention' | 'task';
-  link?: string;
-}
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'superadmin' | 'admin' | 'member';
-  avatar?: string;
-  phoneNumber?: string;
-  isGoogleLinked?: boolean;
-  googleEmail?: string;
-}
-
-export type View = 'dashboard' | 'drive' | 'meeting' | 'tasklist' | 'contacts' | 'calendar' | 'notes' | 'blog' | 'blog-article' | 'email' | 'chat' | 'newsfeed' | 'tasks' | 'new-blog-post' | 'training' | 'class-detail' | 'settings' | 'check-in' | 'user-management' | 'requests' | 'website-data' | 'projects' | 'team-chat' | 'org-chart' | 'process';
-
-export type ServiceName = 'Drive' | 'Keep' | 'Tasks' | 'Gmail' | 'Calendar' | 'Classroom' | 'Blogger' | 'Chat' | 'Meet';
-
-export interface ServiceState {
-  id: ServiceName;
-  name: string;
-  icon: React.ReactElement<IconProps>;
-  isConnected: boolean;
-  isSyncEnabled: boolean;
-}
-
-export interface CheckInEntry {
-  id: number;
-  checkInTime: Date;
-  checkOutTime?: Date;
-  checkInLocation: string;
-  checkOutLocation?: string;
-}
-
-export interface RecentItem {
-  id: string;
-  name: string;
-  type: View;
-  icon: React.ReactElement<IconProps>;
-  itemId?: string;
-}
-
-export interface ActivityItem {
-  id: string;
-  user: { name: string; avatar: string; };
-  action: 'login' | 'file_edit' | 'task_complete' | 'meeting_scheduled' | 'comment_added';
-  target: string;
-  timestamp: string;
-}
+import { User, View, ServiceName, ServiceState, CheckInEntry, RecentItem, ActivityItem, AppNotification } from './types';
 
 
 const mockUsers: User[] = [
@@ -124,57 +68,93 @@ const AppContent: React.FC = () => {
 
   // Listen for all users
   React.useEffect(() => {
-    if (!user || user.id.startsWith('user-') || !auth.currentUser) return;
+    if (!user || user.id.startsWith('user-')) return;
 
     const q = query(collection(db, 'users'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const usersFromDb = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
       if (usersFromDb.length > 0) {
         setAllUsers(prev => {
-            // Merge mock users with real users, preferring real users
             const merged = [...prev];
+            let hasChanges = false;
             usersFromDb.forEach(dbUser => {
                 const idx = merged.findIndex(u => u.id === dbUser.id || u.email.toLowerCase() === dbUser.email.toLowerCase());
                 if (idx !== -1) {
-                    merged[idx] = dbUser;
+                    // Check if actually changed to avoid unnecessary re-renders
+                    const existing = merged[idx];
+                    if (existing.role !== dbUser.role || existing.name !== dbUser.name || existing.avatar !== dbUser.avatar) {
+                        merged[idx] = { ...existing, ...dbUser };
+                        hasChanges = true;
+                    }
                 } else {
                     merged.push(dbUser);
+                    hasChanges = true;
                 }
             });
-            return merged;
+            return hasChanges ? merged : prev;
         });
       }
     }, (error) => {
         handleFirestoreError(error, OperationType.LIST, 'users');
     });
     return () => unsubscribe();
-  }, [user]);
+  }, [user?.id]);
 
-  const [isLeftSidebarCollapsed, setLeftSidebarCollapsed] = useState(true);
+  const [isLeftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false);
   
   // Auth listener
   React.useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
-        // Try to find the user in local list first
-        const found = allUsers.find(u => u.email.toLowerCase() === firebaseUser.email?.toLowerCase());
-        if (found) {
-          setUser({ ...found, id: firebaseUser.uid }); // Ensure UID matches Firebase
-        } else {
-          setUser({
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || 'User',
-            email: firebaseUser.email || '',
-            role: 'member',
-            avatar: firebaseUser.photoURL || undefined
-          });
+        // Initial setup of user object from Firebase
+        const newUser: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || 'Người dùng',
+          email: firebaseUser.email || '',
+          role: 'member', // Default, will be updated by profile listener
+          avatar: firebaseUser.photoURL || undefined
+        };
+
+        setUser(newUser);
+
+        // Sync basic info to Firestore
+        try {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          await setDoc(userDocRef, {
+            name: newUser.name,
+            email: newUser.email,
+            avatar: newUser.avatar,
+            lastLogin: Date.now()
+          }, { merge: true });
+        } catch (error) {
+          console.warn("Could not sync user profile to Firestore:", error);
         }
       } else {
-        // Handled by manual logout or initial load
+        setUser(null);
       }
     });
     return () => unsubscribe();
-  }, [allUsers]);
+  }, []);
+
+  // Current User Profile Listener
+  React.useEffect(() => {
+    if (!user || user.id.startsWith('user-')) return;
+
+    const unsubscribe = onSnapshot(doc(db, 'users', user.id), (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const profileData = docSnapshot.data() as User;
+        setUser(prev => {
+          if (!prev) return profileData;
+          // Only update if key fields changed to avoid unnecessary re-renders from metadata/timestamp updates
+          if (prev.role === profileData.role && prev.name === profileData.name && prev.avatar === profileData.avatar && prev.email === profileData.email) {
+            return prev;
+          }
+          return { ...prev, ...profileData };
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, [user?.id]);
   const [isRightSidebarCollapsed, setRightSidebarCollapsed] = useState(true);
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [activeClassId, setActiveClassId] = useState<string | null>(null);
@@ -188,12 +168,7 @@ const AppContent: React.FC = () => {
   const [activeToasts, setActiveToasts] = useState<AppNotification[]>([]);
   
   React.useEffect(() => {
-    if (!user) return;
-
-    if (user.id.startsWith('user-') || !user.id || !auth.currentUser) {
-       // Using mock user, don't execute Firestore query to avoid permissions error
-       return;
-    }
+    if (!user || user.id.startsWith('user-')) return;
     
     const q = query(
       collection(db, 'notifications'), 
@@ -225,11 +200,24 @@ const AppContent: React.FC = () => {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user?.id]);
 
   const handleCloseToast = (id: string) => {
       setActiveToasts(prev => prev.filter(t => t.id !== id));
   };
+
+  const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            setCommandPaletteOpen(prev => !prev);
+        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleToastClick = async (notif: AppNotification) => {
       handleCloseToast(notif.id);
@@ -261,23 +249,73 @@ const AppContent: React.FC = () => {
   const [defaultEventTitle, setDefaultEventTitle] = useState<string | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
+  React.useEffect(() => {
+    if (!user || user.id.startsWith('user-')) {
+        setEvents(mockEvents);
+        return;
+    }
+
+    const q = query(
+        collection(db, 'events'),
+        where('ownerId', '==', user.id)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const fetchedEvents = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                date: new Date(data.date) // Convert timestamp number to Date object
+            } as CalendarEvent;
+        });
+        
+        if (fetchedEvents.length === 0) {
+            setEvents(mockEvents);
+        } else {
+            setEvents(fetchedEvents);
+        }
+    }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'events');
+    });
+
+    return () => unsubscribe();
+  }, [user?.id]);
+
   // Recently Viewed State
   const [recentlyViewed, setRecentlyViewed] = useState<RecentItem[]>([]);
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>((localStorage.getItem('theme') as 'light' | 'dark' | 'system') || 'system');
+  const [accentColor, setAccentColor] = useState(localStorage.getItem('accentColor') || 'cyan');
 
-  const handleItemViewed = (item: RecentItem) => {
+  React.useEffect(() => {
+    localStorage.setItem('theme', theme);
+    const doc = document.documentElement;
+    if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      doc.classList.add('dark');
+    } else {
+      doc.classList.remove('dark');
+    }
+  }, [theme]);
+
+  React.useEffect(() => {
+    localStorage.setItem('accentColor', accentColor);
+    document.documentElement.setAttribute('data-accent-color', accentColor);
+  }, [accentColor]);
+
+  const handleItemViewed = React.useCallback((item: RecentItem) => {
     setRecentlyViewed(prev => {
         const filtered = prev.filter(i => i.id !== item.id);
         const newRecentList = [item, ...filtered].slice(0, 5); // Limit to 5
         return newRecentList;
     });
-  };
+  }, []);
 
 
   const [services, setServices] = useState<ServiceState[]>([
-      { id: 'Drive', name: 'Lưu trữ', icon: <FolderIcon />, isConnected: true, isSyncEnabled: true },
-      { id: 'Calendar', name: 'Lịch Google', icon: <CalendarIcon />, isConnected: true, isSyncEnabled: true },
-      { id: 'Gmail', name: 'Gmail', icon: <MailIcon />, isConnected: true, isSyncEnabled: false },
-      { id: 'Keep', name: 'Ghi chú Keep', icon: <StickyNoteIcon />, isConnected: true, isSyncEnabled: true },
+      { id: 'Drive', name: 'Lưu trữ', icon: <FolderIcon />, isConnected: true, isSyncEnabled: true, lastSync: '10 phút trước', storageUsage: '4.2 GB / 15 GB' },
+      { id: 'Calendar', name: 'Lịch Google', icon: <CalendarIcon />, isConnected: true, isSyncEnabled: true, lastSync: '1 giờ trước' },
+      { id: 'Gmail', name: 'Gmail', icon: <MailIcon />, isConnected: true, isSyncEnabled: false, lastSync: 'Vừa xong', storageUsage: '1.5 GB' },
+      { id: 'Keep', name: 'Ghi chú Keep', icon: <StickyNoteIcon />, isConnected: true, isSyncEnabled: true, lastSync: '30 phút trước' },
       { id: 'Tasks', name: 'Việc cần làm (Tasks)', icon: <ChecklistIcon />, isConnected: false, isSyncEnabled: false },
       { id: 'Classroom', name: 'Lớp học Classroom', icon: <GraduationCapIcon />, isConnected: true, isSyncEnabled: false },
       { id: 'Blogger', name: 'Blog Blogger', icon: <BloggerIcon />, isConnected: true, isSyncEnabled: true },
@@ -297,11 +335,7 @@ const AppContent: React.FC = () => {
           // Connecting
           if (['Drive', 'Calendar', 'Gmail', 'Keep', 'Tasks', 'Classroom', 'Blogger', 'Chat', 'Meet'].includes(id)) {
               try {
-                  let token = await getAccessToken();
-                  if (!token) {
-                      const res = await googleSignIn();
-                      if (res) token = res.accessToken;
-                  }
+                  const token = await getAccessToken(true);
                   if (!token) throw new Error("Chưa kết nối");
                   
                   setServices(services.map(s => s.id === id ? { ...s, isConnected: true, isSyncEnabled: true } : s));
@@ -387,36 +421,76 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleUsersChange = (updatedUsers: User[]) => {
-    setAllUsers(updatedUsers);
-    if (user) {
+  const handleUsersChange = React.useCallback((updatedUsers: User[]) => {
+    setAllUsers(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(updatedUsers)) return prev;
+        return updatedUsers;
+    });
+    if (user?.id) {
         const updatedCurrentUser = updatedUsers.find(u => u.id === user.id);
         if (updatedCurrentUser) {
-            setUser(updatedCurrentUser);
+            setUser(prev => {
+                if (!prev) return updatedCurrentUser;
+                // Deeper check for stability
+                if (prev.role === updatedCurrentUser.role && prev.name === updatedCurrentUser.name && prev.email === updatedCurrentUser.email && prev.avatar === updatedCurrentUser.avatar) {
+                    return prev;
+                }
+                return { ...prev, ...updatedCurrentUser };
+            });
         }
     }
-  };
+  }, [user?.id]);
 
-  const handleSaveEvent = (eventData: Omit<CalendarEvent, 'id' | 'color'> & { id?: string; color?: CalendarEvent['color'] }) => {
-      if (eventData.id) {
-          // Editing existing event
-          setEvents(prev => prev.map(e => e.id === eventData.id ? { 
-              ...e, 
-              ...eventData,
-              color: eventData.color || e.color
-          } : e));
-      } else {
-          // Creating new event
-          const newEvent: CalendarEvent = {
-              ...eventData,
-              id: `evt-${Date.now()}`,
-              color: eventData.color || 'green'
-          };
-          setEvents(prev => [...prev, newEvent]);
+  const handleSaveEvent = async (eventData: Omit<CalendarEvent, 'id' | 'color'> & { id?: string; color?: CalendarEvent['color'] }) => {
+      const currentUser = auth.currentUser;
+      if (!currentUser || (eventData.id && eventData.id.startsWith('evt-'))) {
+          if (eventData.id) {
+              setEvents(prev => prev.map(e => e.id === eventData.id ? { 
+                  ...e, 
+                  ...eventData,
+                  color: eventData.color || e.color
+              } : e));
+          } else {
+              const newEvent: CalendarEvent = {
+                  ...eventData,
+                  id: `evt-${Date.now()}`,
+                  color: eventData.color || 'green'
+              };
+              setEvents(prev => [...prev, newEvent]);
+          }
+          setEventModalOpen(false);
+          setEditingEvent(null);
+          setDefaultEventTitle(null);
+          return;
       }
-      setEventModalOpen(false);
-      setEditingEvent(null);
-      setDefaultEventTitle(null);
+
+      try {
+          const payload = {
+              title: eventData.title,
+              description: eventData.description || '',
+              startTime: eventData.startTime,
+              endTime: eventData.endTime,
+              date: eventData.date.getTime(), // Save as number timestamp
+              color: eventData.color || 'green',
+              recurrence: eventData.recurrence || 'none',
+              locationType: eventData.locationType || 'offline',
+              meetingRoom: eventData.meetingRoom || '',
+              onlineLink: eventData.onlineLink || '',
+              ownerId: currentUser.uid
+          };
+
+          if (eventData.id) {
+              await updateDoc(doc(db, 'events', eventData.id), payload);
+          } else {
+              await addDoc(collection(db, 'events'), payload);
+          }
+          
+          setEventModalOpen(false);
+          setEditingEvent(null);
+          setDefaultEventTitle(null);
+      } catch (error) {
+          handleFirestoreError(error, OperationType.UPDATE, 'events');
+      }
   };
 
   const handleEditEvent = (event: CalendarEvent) => {
@@ -445,7 +519,7 @@ const AppContent: React.FC = () => {
     setActiveView('dashboard');
   }
 
-  const handleNavigate = (view: View, section?: string) => {
+  const handleNavigate = React.useCallback((view: View, section?: string) => {
     setActiveView(view);
     if (view === 'settings' && section) {
       setActiveSettingsSection(section);
@@ -466,23 +540,67 @@ const AppContent: React.FC = () => {
     }
     
     setMobileNavOpen(false);
-  }
+  }, []);
 
   const handleNavigateToTasks = (taskListId: string) => {
       setActiveTaskListId(taskListId);
       setActiveView('tasklist');
   };
 
+  const handleSendNotification = React.useCallback(async (notifData: Omit<AppNotification, 'id' | 'createdAt'>) => {
+    const currentUserId = user?.id;
+    if (!currentUserId) return;
+    
+    const demoNotification: AppNotification = {
+        ...notifData,
+        id: `notif-${Date.now()}-${Math.random()}`,
+        createdAt: Date.now()
+    };
+
+    if (currentUserId === 'user-1' || currentUserId.startsWith('user-')) {
+      setNotifications(prev => [demoNotification, ...prev]);
+      setActiveToasts(prev => {
+          // Avoid duplicate toasts if possible
+          if (prev.some(t => t.title === demoNotification.title && t.message === demoNotification.message)) return prev;
+          return [...prev, demoNotification];
+      });
+      return;
+    }
+    
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        userId: demoNotification.userId,
+        title: demoNotification.title,
+        message: demoNotification.message,
+        read: demoNotification.read,
+        createdAt: demoNotification.createdAt,
+        type: demoNotification.type,
+        link: demoNotification.link
+      });
+    } catch (error) {
+       console.error("Error creating notification", error);
+    }
+  }, [user?.id]);
+
   if (!user) {
     return <Auth onLogin={handleLogin} />;
   }
+
+  const closeAllDrawers = () => {
+    setMobileNavOpen(false);
+    setMobileActivityOpen(false);
+  }
+
+  const handleSyncService = (id: ServiceName) => {
+      setServices(prev => prev.map(s => s.id === id ? { ...s, lastSync: 'Vừa xong' } : s));
+  };
 
   const renderMainView = () => {
     switch(activeView) {
       case 'check-in':
         return <CheckInView user={user} log={checkInLog} activityLog={activityLog} onCheckIn={handleCheckIn} onCheckOut={handleCheckOut} />;
       case 'requests':
-        return <RequestsView user={user} users={allUsers} />;
+        return <RequestsView user={user} users={allUsers} onSaveEvent={handleSaveEvent} />;
       case 'website-data':
         return <WebsiteDataView user={user} allUsers={allUsers} onUsersChange={handleUsersChange} />;
       case 'projects':
@@ -494,17 +612,18 @@ const AppContent: React.FC = () => {
       case 'process':
         return <ProcessWorkflowView user={user} onNavigate={handleNavigate} />;
       case 'drive':
-        return <DriveView user={user} onItemViewed={handleItemViewed} />;
+        return <DriveView user={user} onItemViewed={handleItemViewed} onSync={() => handleSyncService('Drive')} />;
       case 'meeting':
         return <MeetingView user={user} onItemViewed={handleItemViewed} />;
       case 'tasklist':
-        return <TasklistView user={user} allUsers={allUsers} initialListId={activeTaskListId} />;
+        return <TasklistView user={user} allUsers={allUsers} initialListId={activeTaskListId} onSendNotification={handleSendNotification} />;
       case 'contacts':
         return <ContactsView user={user} onItemViewed={handleItemViewed} onNavigate={handleNavigate} />;
       case 'calendar':
         return <CalendarView user={user} events={events} onSaveEvent={handleSaveEvent} onEditEvent={handleEditEvent} onOpenModal={() => { setEditingEvent(null); setEventModalOpen(true); }} onItemViewed={handleItemViewed} />;
       case 'notes':
-        return <NotesView />;
+        return <NotesView user={user} onSync={() => handleSyncService('Keep')} />;
+
       case 'blog':
         return <BlogView user={user} onNavigate={handleNavigate} onSchedule={handleScheduleFromArticle} onItemViewed={handleItemViewed} />;
       case 'blog-article':
@@ -525,47 +644,12 @@ const AppContent: React.FC = () => {
       case 'class-detail':
         return <ClassDetailView user={user} classId={activeClassId} onNavigate={handleNavigate} />;
       case 'settings':
-        return <SettingsView user={user} services={services} onToggleSync={handleToggleSync} onToggleConnection={handleToggleConnection} allUsers={allUsers} onUsersChange={handleUsersChange} initialSection={activeSettingsSection} onNavigate={handleNavigate} />;
+        return <SettingsView user={user} services={services} onToggleSync={handleToggleSync} onToggleConnection={handleToggleConnection} allUsers={allUsers} onUsersChange={handleUsersChange} initialSection={activeSettingsSection} onNavigate={handleNavigate} theme={theme} setTheme={setTheme} accentColor={accentColor} setAccentColor={setAccentColor} />;
       case 'dashboard':
       default:
         return <MainContent user={user} recentlyViewed={recentlyViewed} events={events} onNavigate={handleNavigate} checkInLog={checkInLog} activityLog={activityLog} />;
     }
   }
-
-  const closeAllDrawers = () => {
-    setMobileNavOpen(false);
-    setMobileActivityOpen(false);
-  }
-
-  const handleSendNotification = async (notifData: Omit<AppNotification, 'id' | 'createdAt'>) => {
-    if (!user) return;
-    
-    const demoNotification: AppNotification = {
-        ...notifData,
-        id: `notif-${Date.now()}-${Math.random()}`,
-        createdAt: Date.now()
-    };
-
-    if (user.id === 'user-1') {
-      setNotifications(prev => [demoNotification, ...prev]);
-      setActiveToasts(prev => [...prev, demoNotification]);
-      return;
-    }
-    
-    try {
-      await addDoc(collection(db, 'notifications'), {
-        userId: demoNotification.userId,
-        title: demoNotification.title,
-        message: demoNotification.message,
-        read: demoNotification.read,
-        createdAt: demoNotification.createdAt,
-        type: demoNotification.type,
-        link: demoNotification.link
-      });
-    } catch (error) {
-       console.error("Error creating notification", error);
-    }
-  };
 
   const handleCreateDemoNotification = async () => {
     handleSendNotification({
@@ -581,7 +665,7 @@ const AppContent: React.FC = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="h-screen w-screen bg-transparent p-[5px] font-sans text-[--color-text-primary] overflow-hidden">
+    <div className="h-screen w-screen bg-transparent p-[5px] font-sans text-[--color-text-primary] overflow-hidden relative">
       <div className="w-full h-full bg-[--color-surface-primary] rounded-[10px] shadow-2xl overflow-hidden flex flex-col relative ring-1 ring-black/5">
         {(isMobileNavOpen || isMobileActivityOpen) && (
           <div 
@@ -610,17 +694,37 @@ const AppContent: React.FC = () => {
         <div className="flex flex-1 min-h-0">
           <LeftSidebar 
             isCollapsed={isLeftSidebarCollapsed}
+            onToggleCollapse={() => setLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
             isMobileOpen={isMobileNavOpen}
             onClose={() => setMobileNavOpen(false)}
-            onMouseEnter={() => setLeftSidebarCollapsed(false)}
-            onMouseLeave={() => setLeftSidebarCollapsed(true)}
             activeView={activeView}
             onNavigate={handleNavigate}
             recentlyViewed={recentlyViewed}
             onAiClick={() => setAiWidgetOpen(!isAiWidgetOpen)}
             isAiOpen={isAiWidgetOpen}
+            user={user}
+            onLogout={handleLogout}
           />
-          {renderMainView()}
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={activeView}
+              initial={{ opacity: 0, x: 5 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -5 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="flex-1 flex flex-col min-w-0 m-2"
+              style={{
+                background: 'rgba(255, 255, 255, 0.75)',
+                borderRadius: '16px',
+                boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+                backdropFilter: 'blur(18.2px)',
+                WebkitBackdropFilter: 'blur(18.2px)',
+                border: '1px solid rgba(255, 255, 255, 1)'
+              }}
+            >
+              {renderMainView()}
+            </motion.div>
+          </AnimatePresence>
           <RightSidebar 
             isCollapsed={isRightSidebarCollapsed} 
             isMobileOpen={isMobileActivityOpen}
@@ -641,6 +745,11 @@ const AppContent: React.FC = () => {
 
         {isAiWidgetOpen && <AiChatWidget user={user} onClose={() => setAiWidgetOpen(false)} isRightSidebarOpen={!isRightSidebarCollapsed} />}
         <NotificationToast notifications={activeToasts} onClose={handleCloseToast} onClick={handleToastClick} allUsers={allUsers} />
+        <CommandPalette 
+            isOpen={isCommandPaletteOpen} 
+            onClose={() => setCommandPaletteOpen(false)} 
+            onNavigate={handleNavigate}
+        />
       </div>
     </div>
   );

@@ -1,4 +1,6 @@
 
+import firebaseConfig from './firebase-applet-config.json';
+
 export interface PickerResult {
   action: string;
   docs?: Array<{
@@ -29,14 +31,13 @@ declare const gapi: {
 };
 
 let pickerApiLoaded = false;
+let loadPromise: Promise<void> | null = null;
 
 export const loadPickerApi = (): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    if (pickerApiLoaded) {
-      resolve();
-      return;
-    }
+  if (pickerApiLoaded) return Promise.resolve();
+  if (loadPromise) return loadPromise;
 
+  loadPromise = new Promise((resolve, reject) => {
     // Load GAPI
     const script = document.createElement('script');
     script.src = 'https://apis.google.com/js/api.js';
@@ -52,13 +53,14 @@ export const loadPickerApi = (): Promise<void> => {
     script.onerror = () => reject(new Error('GAPI script failed to load'));
     document.body.appendChild(script);
   });
+  return loadPromise;
 };
 
 export const showPicker = async (accessToken: string, callback: (result: PickerResult) => void) => {
   await loadPickerApi();
 
-  const apiKey = import.meta.env.VITE_GOOGLE_API_KEY || ''; // Needs to be set in .env
-  const appId = import.meta.env.VITE_GOOGLE_APP_ID || ''; // Project Number (optional but recommended)
+  const apiKey = firebaseConfig.apiKey || '';
+  const appId = firebaseConfig.messagingSenderId || '';
 
   const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
     .setMimeTypes('application/pdf,image/png,image/jpeg,application/vnd.google-apps.document,application/vnd.google-apps.spreadsheet');

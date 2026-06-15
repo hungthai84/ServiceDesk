@@ -32,14 +32,14 @@ const AnimatedRequestsIcon = () => (
 const RequestsBanner: React.FC = () => {
     const { t } = useLanguage();
     return (
-        <div className="relative py-3 px-6 md:py-4 md:px-8 rounded-2xl bg-gradient-to-br from-teal-600 via-emerald-700 to-green-800 text-white overflow-hidden shadow-xl">
+        <div className="relative py-3 px-6 sm:py-4 sm:px-8 rounded-xl bg-gradient-to-br from-teal-600 via-emerald-700 to-green-800 text-white overflow-hidden shadow-xl">
             <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/5 rounded-full z-0" aria-hidden="true"></div>
             <div className="absolute top-0 left-0 w-24 h-24 bg-white/5 rounded-lg opacity-80 z-0 rotate-12" aria-hidden="true"></div>
       
-            <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div className="text-center md:text-left">
+            <div className="relative z-10 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="text-center sm:text-left">
                     <h1 className="text-3xl font-bold">{t('requestsAndApprovals') || "Phê duyệt"}</h1>
-                    <p className="mt-2 text-green-100 max-w-lg">
+                    <p className="mt-2 text-green-100 max-w-lg italic">
                         Quản lý và phê duyệt các yêu cầu, đề xuất của nhân viên và quy trình nội bộ.
                     </p>
                 </div>

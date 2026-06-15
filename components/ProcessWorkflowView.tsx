@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { User, View } from '../App';
-import { XIcon, WorkflowIcon, UserIcon, ClockIcon, ChecklistIcon, LightningIcon, CheckIcon } from './icons';
+import { XIcon, WorkflowIcon, UserIcon, ClockIcon, ChecklistIcon, LightningIcon, CheckIcon, PencilIcon } from './icons';
 import Xarrow, { Xwrapper } from 'react-xarrows';
 
 interface ProcessNode {
@@ -26,6 +26,7 @@ const ProcessWorkflowView: React.FC<ProcessWorkflowViewProps> = ({ user }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [processName, setProcessName] = useState('Quy trình mới');
   const [isSaved, setIsSaved] = useState(false);
+  const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   
   // Form State
   const [newNodeType, setNewNodeType] = useState<'step' | 'action'>('step');
@@ -44,36 +45,59 @@ const ProcessWorkflowView: React.FC<ProcessWorkflowViewProps> = ({ user }) => {
     e.preventDefault();
     if (!newNodeName.trim()) return;
 
-    // Calculate a simple default position based on existing nodes
-    let newX = 50;
-    let newY = 50;
-    
-    if (newNodeLink) {
-        const linkedNode = nodes.find(n => n.id === newNodeLink);
-        if (linkedNode) {
-            newX = linkedNode.x;
-            newY = linkedNode.y + 150; // Position below linked node
+    if (editingNodeId) {
+        setNodes(nodes.map(node => 
+            node.id === editingNodeId 
+                ? {
+                    ...node,
+                    type: newNodeType,
+                    name: newNodeName,
+                    description: newNodeDesc,
+                    linkedToNodeId: newNodeLink,
+                    assignee: newNodeAssignee,
+                    duration: newNodeDuration,
+                    tasks: newNodeTasks.filter(t => t.trim() !== ''),
+                  }
+                : node
+        ));
+    } else {
+        // Calculate a simple default position based on existing nodes
+        let newX = 50;
+        let newY = 50;
+        
+        if (newNodeLink) {
+            const linkedNode = nodes.find(n => n.id === newNodeLink);
+            if (linkedNode) {
+                newX = linkedNode.x;
+                newY = linkedNode.y + 150; // Position below linked node
+            }
+        } else if (nodes.length > 0) {
+            newX = nodes[nodes.length - 1].x + 250;
+            newY = nodes[nodes.length - 1].y;
         }
-    } else if (nodes.length > 0) {
-        newX = nodes[nodes.length - 1].x + 250;
-        newY = nodes[nodes.length - 1].y;
+
+        const newNode: ProcessNode = {
+          id: `node-${Date.now()}`,
+          type: newNodeType,
+          name: newNodeName,
+          description: newNodeDesc,
+          linkedToNodeId: newNodeLink,
+          x: newX,
+          y: newY,
+          assignee: newNodeAssignee,
+          duration: newNodeDuration,
+          tasks: newNodeTasks.filter(t => t.trim() !== ''),
+        };
+
+        setNodes([...nodes, newNode]);
     }
 
-    const newNode: ProcessNode = {
-      id: `node-${Date.now()}`,
-      type: newNodeType,
-      name: newNodeName,
-      description: newNodeDesc,
-      linkedToNodeId: newNodeLink,
-      x: newX,
-      y: newY,
-      assignee: newNodeAssignee,
-      duration: newNodeDuration,
-      tasks: newNodeTasks.filter(t => t.trim() !== ''),
-    };
+    handleCloseModal();
+  };
 
-    setNodes([...nodes, newNode]);
+  const handleCloseModal = () => {
     setShowCreateModal(false);
+    setEditingNodeId(null);
     setNewNodeType('step');
     setNewNodeName('');
     setNewNodeDesc('');
@@ -81,6 +105,24 @@ const ProcessWorkflowView: React.FC<ProcessWorkflowViewProps> = ({ user }) => {
     setNewNodeAssignee('');
     setNewNodeDuration('');
     setNewNodeTasks(['']);
+  };
+
+  const handleOpenCreateModal = () => {
+      handleCloseModal();
+      setShowCreateModal(true);
+  };
+
+  const handleEditNodeClick = (e: React.MouseEvent, node: ProcessNode) => {
+      e.stopPropagation();
+      setEditingNodeId(node.id);
+      setNewNodeType(node.type);
+      setNewNodeName(node.name);
+      setNewNodeDesc(node.description || '');
+      setNewNodeLink(node.linkedToNodeId || '');
+      setNewNodeAssignee(node.assignee || '');
+      setNewNodeDuration(node.duration || '');
+      setNewNodeTasks(node.tasks && node.tasks.length > 0 ? node.tasks : ['']);
+      setShowCreateModal(true);
   };
 
   const handleTaskChange = (index: number, value: string) => {
@@ -154,7 +196,7 @@ const ProcessWorkflowView: React.FC<ProcessWorkflowViewProps> = ({ user }) => {
              {isSaved ? 'Đã lưu' : 'Lưu quy trình'}
            </button>
            <button 
-             onClick={() => setShowCreateModal(true)}
+             onClick={handleOpenCreateModal}
              className="bg-[--color-accent-600] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-[--color-accent-700] hover:shadow-md transition-all flex items-center gap-2">
              <WorkflowIcon className="w-4 h-4" />
              Tạo thẻ quy trình mới
@@ -199,13 +241,21 @@ const ProcessWorkflowView: React.FC<ProcessWorkflowViewProps> = ({ user }) => {
                                 {/* Diamond Background */}
                                 <div className={`absolute w-36 h-36 bg-white border ${draggingNodeId === node.id ? 'border-amber-400 shadow-2xl scale-[1.02] z-50' : 'border-[--color-border-secondary] shadow-lg z-10'} rounded-2xl rotate-45 transition-all duration-200`} />
                                 
-                                {/* Delete Button */}
-                                <button 
-                                    onClick={(e) => handleDeleteNode(e, node.id)}
-                                    className="absolute top-4 right-4 w-7 h-7 bg-red-100 text-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-200 hover:scale-110 shadow-sm z-[60]"
-                                >
-                                    <XIcon className="w-3.5 h-3.5" />
-                                </button>
+                                {/* Actions Wrapper */}
+                                <div className="absolute top-4 right-4 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-[60]">
+                                    <button 
+                                        onClick={(e) => handleEditNodeClick(e, node)}
+                                        className="w-7 h-7 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-200 hover:scale-110 shadow-sm"
+                                    >
+                                        <PencilIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button 
+                                        onClick={(e) => handleDeleteNode(e, node.id)}
+                                        className="w-7 h-7 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 hover:scale-110 shadow-sm"
+                                    >
+                                        <XIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
 
                                 {/* Content */}
                                 <div className="relative z-20 flex flex-col items-center justify-center p-2 w-32 text-center">
@@ -228,13 +278,21 @@ const ProcessWorkflowView: React.FC<ProcessWorkflowViewProps> = ({ user }) => {
                             </div>
                         ) : (
                             <div className={`w-72 bg-[--color-surface-secondary] border ${draggingNodeId === node.id ? 'border-[--color-accent-500] shadow-2xl scale-[1.02] z-50' : 'border-[--color-border-secondary] shadow-lg z-10'} rounded-2xl p-5 transition-all duration-200 relative`}>
-                                {/* Delete Button */}
-                                <button 
-                                    onClick={(e) => handleDeleteNode(e, node.id)}
-                                    className="absolute -top-3 -right-3 w-7 h-7 bg-red-100 text-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-200 hover:scale-110 shadow-sm border border-red-200 z-50"
-                                >
-                                    <XIcon className="w-3.5 h-3.5" />
-                                </button>
+                                {/* Actions Wrapper */}
+                                <div className="absolute -top-3 -right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                                    <button 
+                                        onClick={(e) => handleEditNodeClick(e, node)}
+                                        className="w-7 h-7 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-200 hover:scale-110 shadow-sm border border-blue-200"
+                                    >
+                                        <PencilIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button 
+                                        onClick={(e) => handleDeleteNode(e, node.id)}
+                                        className="w-7 h-7 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 hover:scale-110 shadow-sm border border-red-200"
+                                    >
+                                        <XIcon className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
                                 
                                 <div className="flex items-center gap-3 mb-3 pb-3 border-b border-[--color-border-secondary]">
                                 <div className="w-10 h-10 rounded-full bg-[--color-accent-100] text-[--color-accent-600] flex items-center justify-center shrink-0">
@@ -308,8 +366,8 @@ const ProcessWorkflowView: React.FC<ProcessWorkflowViewProps> = ({ user }) => {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-fade-in-up">
            <div className="bg-white/95 backdrop-blur-xl border border-[--color-border-secondary] rounded-2xl shadow-full w-full max-w-md overflow-hidden animate-scale-in">
               <div className="px-6 py-4 border-b border-[--color-border-secondary] flex justify-between items-center bg-[--color-surface-secondary]">
-                 <h3 className="text-lg font-bold text-[--color-text-primary]">Thêm Thẻ Quy trình</h3>
-                 <button onClick={() => setShowCreateModal(false)} className="text-[--color-text-tertiary] hover:text-[--color-text-primary] transition-colors p-1 rounded-md hover:bg-[--color-surface-hover]">
+                 <h3 className="text-lg font-bold text-[--color-text-primary]">{editingNodeId ? 'Chỉnh sửa Thẻ Quy trình' : 'Thêm Thẻ Quy trình'}</h3>
+                 <button onClick={handleCloseModal} className="text-[--color-text-tertiary] hover:text-[--color-text-primary] transition-colors p-1 rounded-md hover:bg-[--color-surface-hover]">
                     <XIcon className="w-5 h-5" />
                  </button>
               </div>
@@ -413,7 +471,7 @@ const ProcessWorkflowView: React.FC<ProcessWorkflowViewProps> = ({ user }) => {
                               className="w-full bg-[--color-surface-primary] border border-[--color-border-secondary] text-[--color-text-primary] rounded-xl p-3 focus:ring-2 focus:ring-[--color-accent-500] focus:outline-none text-sm font-medium transition-all cursor-pointer"
                            >
                               <option value="">-- Không liên kết (Bắt đầu mới) --</option>
-                              {nodes.map(n => (
+                              {nodes.filter(n => n.id !== editingNodeId).map(n => (
                                   <option key={n.id} value={n.id}>{n.name}</option>
                               ))}
                            </select>
@@ -424,7 +482,7 @@ const ProcessWorkflowView: React.FC<ProcessWorkflowViewProps> = ({ user }) => {
                  <div className="p-6 border-t border-[--color-border-secondary] flex justify-end gap-3 bg-[--color-surface-primary]/50 rounded-b-2xl">
                     <button 
                        type="button" 
-                       onClick={() => setShowCreateModal(false)}
+                       onClick={handleCloseModal}
                        className="px-5 py-2.5 rounded-xl text-sm font-bold text-[--color-text-secondary] hover:bg-[--color-surface-hover] transition-all"
                     >
                        Hủy
@@ -433,7 +491,7 @@ const ProcessWorkflowView: React.FC<ProcessWorkflowViewProps> = ({ user }) => {
                        type="submit" 
                        className="px-5 py-2.5 rounded-xl text-sm font-bold bg-[--color-accent-600] hover:bg-[--color-accent-700] text-white shadow-sm hover:shadow transition-all"
                     >
-                       Tạo thẻ quy trình
+                       {editingNodeId ? 'Cập nhật thẻ' : 'Tạo thẻ quy trình'}
                     </button>
                  </div>
               </form>

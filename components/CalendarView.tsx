@@ -3,7 +3,7 @@ import { ChevronLeftIcon, PlusIcon, SyncIcon, CheckCircleIcon, VideoIcon, Calend
 import { useLanguage } from './LanguageContext';
 import CalendarBanner from './CalendarBanner';
 import MeetingView from './MeetingView';
-import { User, RecentItem } from '../App';
+import { User, RecentItem } from '../types';
 import { mockTaskLists } from './TasklistView';
 import { MapPin, Video as LucideVideo, Users as LucideUsers, List as LucideList, FileText, ExternalLink } from 'lucide-react';
 import { getAccessToken } from '../firebase';
@@ -110,7 +110,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ user, events, onSaveEvent, 
             const data = await response.json();
             
             if (data.items) {
-                 const newGoogleEvents: CalendarEvent[] = data.items.map((item: any) => {
+                 const newGoogleEvents: CalendarEvent[] = data.items.map((item: { id: string; summary?: string; description?: string; htmlLink?: string; hangoutLink?: string; start?: { dateTime?: string; date?: string; }; end?: { dateTime?: string; date?: string; } }) => {
                      const start = item.start?.dateTime || item.start?.date;
                      const end = item.end?.dateTime || item.end?.date;
                      

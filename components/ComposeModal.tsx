@@ -24,9 +24,9 @@ const ComposeModal: React.FC<ComposeModalProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 flex justify-center items-center" aria-modal="true" role="dialog">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9999] flex justify-center items-center" aria-modal="true" role="dialog">
       <div className="absolute inset-0" onClick={onClose}></div>
-      <div className="relative w-full max-w-2xl bg-white/80 backdrop-blur-2xl rounded-xl shadow-2xl flex flex-col animate-fade-in-up">
+      <div className="relative w-[80%] h-[80%] bg-white/80 backdrop-blur-2xl rounded-xl shadow-2xl flex flex-col animate-fade-in-up">
         <header className="p-4 border-b border-slate-200/80 flex justify-between items-center shrink-0">
           <h2 className="text-lg font-semibold text-slate-800">New Message</h2>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-400/20 text-slate-600" aria-label="Close">

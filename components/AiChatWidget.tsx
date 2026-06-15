@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User } from '../App';
+import { User } from '../types';
 import { MicIcon, PaperAirplaneIcon, XIcon } from './icons';
-import { GoogleGenAI } from '@google/genai';
 import { mockTaskLists } from './TasklistView';
 import { mockEmails } from './EmailClient';
 import { mockEvents } from './CalendarView';
@@ -254,22 +253,23 @@ const AiChatWidget: React.FC<AiChatWidgetProps> = ({ user, onClose, isRightSideb
 
             const systemInstruction = `You are a helpful and friendly AI assistant integrated into a project management dashboard named 'POW'. Your name is POW-AI. You are speaking to ${user.name}.${systemInstructionAddon} Respond in a clear, concise, and professional manner, using Markdown for formatting if needed (like lists). Always respond in Vietnamese. Today's date is ${new Date().toLocaleDateString('vi-VN')}.`;
             
-            const prompt = `Based on the following data, answer the user's question.\nData: ${context || 'No specific data provided for this query.'}\nUser question: "${currentInput}"`;
-            
-            if (!process.env.API_KEY) {
-                throw new Error("API key is not configured.");
-            }
-
-            const ai = new GoogleGenAI({apiKey: process.env.API_KEY});
-            const response = await ai.models.generateContent({
-                model: 'gemini-3.1-pro-preview',
-                contents: context ? prompt : currentInput, // if no context, just send plain input
-                config: {
-                    systemInstruction: systemInstruction,
-                }
+            const reqResponse = await fetch('/api/ai/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    prompt: currentInput, 
+                    systemInstruction,
+                    context
+                })
             });
 
-            const aiText = response.text;
+            if (!reqResponse.ok) {
+                const errorData = await reqResponse.json();
+                throw new Error(errorData.error || 'Failed to get AI response');
+            }
+
+            const data = await reqResponse.json();
+            const aiText = data.text;
             const aiMessage: Message = { author: 'ai', text: aiText };
             setMessages(prev => [...prev, aiMessage]);
             speak(aiText);

@@ -158,6 +158,25 @@
         "createdAt": { "type": "number" }
       },
       "required": ["articleId", "authorId", "authorName", "content", "createdAt"]
+    },
+    "CalendarEvent": {
+      "title": "CalendarEvent",
+      "description": "A calendar event",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "startTime": { "type": "string" },
+        "endTime": { "type": "string" },
+        "date": { "type": "number", "description": "Timestamp" },
+        "color": { "type": "string", "enum": ["blue", "orange", "red", "green"] },
+        "ownerId": { "type": "string" },
+        "recurrence": { "type": "string", "enum": ["none", "daily", "weekly", "monthly", "yearly"] },
+        "locationType": { "type": "string", "enum": ["offline", "online"] },
+        "meetingRoom": { "type": "string" },
+        "onlineLink": { "type": "string" }
+      },
+      "required": ["title", "startTime", "endTime", "date", "ownerId"]
     }
   },
   "firestore": {
@@ -188,6 +207,10 @@
     "/notes/{noteId}": {
       "schema": { "$ref": "#/entities/Note" },
       "description": "User notes. Restricted to the owner."
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/CalendarEvent" },
+      "description": "User calendar events. Restricted to the owner."
     },
     "/posts/{postId}": {
       "schema": { "$ref": "#/entities/Post" },

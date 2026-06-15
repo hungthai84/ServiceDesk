@@ -7,8 +7,8 @@ import {
     GoogleIcon, SyncIcon
 } from './icons';
 import { useLanguage } from './LanguageContext';
-import { showPicker } from '../googlePicker';
-import { getAccessToken } from '../googleTasks';
+import GooglePickerButton from './GooglePickerButton';
+import { getAccessToken } from '../firebase';
 
 // --- TYPES ---
 interface FileSystemItem {
@@ -161,7 +161,7 @@ const DriveView: React.FC<DriveViewProps> = ({ user, onItemViewed }) => {
             const data = await response.json();
             
             if (data.files) {
-                const newFiles: FileSystemItem[] = data.files.map((file: any) => {
+                const newFiles: FileSystemItem[] = data.files.map((file: { id: string; name: string; mimeType: string; size?: string; modifiedTime?: string; owners?: { displayName?: string }[] }) => {
                     let type: FileSystemItem['type'] = 'docx';
                     if (file.mimeType.includes('pdf')) type = 'pdf';
                     else if (file.mimeType.includes('image')) type = 'png';
@@ -235,40 +235,30 @@ const DriveView: React.FC<DriveViewProps> = ({ user, onItemViewed }) => {
         }
     };
 
-    const handleGooglePicker = async () => {
-        try {
-            const token = await getAccessToken();
-            showPicker(token, (result) => {
-                if (result.action === 'picked' && result.docs) {
-                    const newFiles: FileSystemItem[] = result.docs.map(doc => {
-                        let type: FileSystemItem['type'] = 'docx';
-                        if (doc.mimeType.includes('pdf')) type = 'pdf';
-                        else if (doc.mimeType.includes('image')) type = 'png';
-                        else if (doc.mimeType.includes('video')) type = 'mp4';
+    const handlePickedFromDrive = (docs: { id: string; name: string; mimeType?: string; sizeBytes?: number; lastEditedUtc?: number }[]) => {
+        const newFiles: FileSystemItem[] = docs.map(doc => {
+            let type: FileSystemItem['type'] = 'docx';
+            if (doc.mimeType?.includes('pdf')) type = 'pdf';
+            else if (doc.mimeType?.includes('image')) type = 'png';
+            else if (doc.mimeType?.includes('video')) type = 'mp4';
 
-                        return {
-                            id: doc.id,
-                            name: doc.name,
-                            type,
-                            size: '-',
-                            modifiedAt: new Date(doc.lastEditedUtc).toISOString().split('T')[0],
-                            owner: 'Google Drive',
-                            parentId: currentFolderId,
-                            source: 'google'
-                        };
-                    });
-                    setMockFileSystem(prev => {
-                        const existingIds = new Set(prev.map(i => i.id));
-                        const filtered = newFiles.filter(f => !existingIds.has(f.id));
-                        return [...prev, ...filtered];
-                    });
-                    showToast(`Đã thêm ${newFiles.length} tệp từ Google Drive!`);
-                }
-            });
-        } catch (error) {
-            console.error('Picker error:', error);
-            showToast('Không thể mở Google Picker. Kiểm tra cấu hình API Key.');
-        }
+            return {
+                id: doc.id,
+                name: doc.name,
+                type,
+                size: doc.sizeBytes ? `${(doc.sizeBytes / 1024).toFixed(0)} KB` : '-',
+                modifiedAt: doc.lastEditedUtc ? new Date(doc.lastEditedUtc).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                owner: 'Google Drive',
+                parentId: currentFolderId,
+                source: 'google'
+            };
+        });
+        setMockFileSystem(prev => {
+            const existingIds = new Set(prev.map(i => i.id));
+            const filtered = newFiles.filter(f => !existingIds.has(f.id));
+            return [...prev, ...filtered];
+        });
+        showToast(`Đã thêm ${newFiles.length} tệp từ Google Drive!`);
     };
 
     return (
@@ -325,9 +315,7 @@ const DriveView: React.FC<DriveViewProps> = ({ user, onItemViewed }) => {
                                 <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 py-2 px-4 bg-gradient-to-br from-blue-500 to-sky-600 text-white font-bold rounded-lg shadow-md hover:shadow-sky-500/40 transition-all transform hover:scale-105">
                                     <UploadIcon className="w-5 h-5"/> <span className="hidden sm:inline">Tải lên</span>
                                 </button>
-                                <button onClick={handleGooglePicker} className="flex items-center gap-2 py-2 px-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg shadow-md hover:bg-slate-50 transition-all transform hover:scale-105">
-                                    <GoogleIcon className="w-5 h-5"/> <span className="hidden sm:inline">Chọn từ Drive</span>
-                                </button>
+                                <GooglePickerButton onPicked={handlePickedFromDrive} className="hover:scale-105" />
                                 <div className="bg-white/50 p-1 rounded-lg flex items-center text-sm font-semibold">
                                     <button onClick={() => setViewMode('grid')} className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-white shadow text-blue-600' : 'text-slate-600 hover:bg-white/50'}`} title="Grid View"><GridIcon className="w-5 h-5" /></button>
                                     <button onClick={() => setViewMode('list')} className={`p-2 rounded-md ${viewMode === 'list' ? 'bg-white shadow text-blue-600' : 'text-slate-600 hover:bg-white/50'}`} title="List View"><ListIcon className="w-5 h-5" /></button>

@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { User } from '../App';
-import { HashtagIcon, PaperAirplaneIcon, SearchIcon, XIcon, PlusIcon, SmileIcon, UserCircleIcon } from './icons';
+import { HashtagIcon, PaperAirplaneIcon, SearchIcon, XIcon, PlusIcon, SmileIcon, UserCircleIcon, SyncIcon, GoogleIcon, MicIcon } from './icons';
 import ChatBanner from './ChatBanner';
 import { initialContacts } from './ContactsView';
-import { db, auth } from '../firebase';
+import { db, auth, getAccessToken, googleSignIn } from '../firebase';
 import { 
     collection, 
     query, 
@@ -122,6 +122,77 @@ const ChatView: React.FC<ChatViewProps> = ({ user, allUsers = [] }) => {
     const [contactSearchTerm, setContactSearchTerm] = useState('');
     const [selectTab, setSelectTab] = useState<'employees' | 'contacts'>('employees');
 
+    const [isListening, setIsListening] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recognitionRef = React.useRef<any>(null);
+
+    const toggleSpeechRecognition = () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert('Trình duyệt của bạn không hỗ trợ nhận diện giọng nói (Web Speech API). Hãy sử dụng Google Chrome.');
+            return;
+        }
+
+        if (isListening) {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+            setIsListening(false);
+        } else {
+            const rec = new SpeechRecognition();
+            rec.continuous = false;
+            rec.interimResults = false;
+            rec.lang = 'vi-VN';
+
+            rec.onstart = () => {
+                setIsListening(true);
+            };
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            rec.onresult = (event: any) => {
+                const transcript = event.results[0][0].transcript;
+                if (transcript) {
+                    setNewMessage(prev => {
+                        const spacer = prev ? ' ' : '';
+                        return prev + spacer + transcript;
+                    });
+                }
+            };
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            rec.onerror = (event: any) => {
+                console.error('Speech recognition error', event.error);
+                setIsListening(false);
+            };
+
+            rec.onend = () => {
+                setIsListening(false);
+            };
+
+            recognitionRef.current = rec;
+            rec.start();
+        }
+    };
+
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current) {
+                try {
+                    recognitionRef.current.stop();
+                } catch {
+                    // ignore
+                }
+            }
+        };
+    }, []);
+
+    // Google Chat Integration State
+    const [googleSpaces, setGoogleSpaces] = useState<Channel[]>([]);
+    const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+    const [isSyncingGoogle, setIsSyncingGoogle] = useState(false);
+    const [googleError, setGoogleError] = useState('');
+
     const commonEmojis = ['👍', '❤️', '😂', '😮', '😢', '🔥', '✅', '🚀'];
 
     const getDMHelper = (channel: Channel, currentUserUid: string) => {
@@ -200,6 +271,139 @@ const ChatView: React.FC<ChatViewProps> = ({ user, allUsers = [] }) => {
         }
     };
 
+    const fetchGoogleSpaces = async (token: string) => {
+        setIsSyncingGoogle(true);
+        setGoogleError('');
+        try {
+            const response = await fetch('https://chat.googleapis.com/v1/spaces', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                if (response.status === 401 || response.status === 403) {
+                    setIsGoogleConnected(false);
+                }
+                throw new Error(`Google Workspaces API Error (Mã lỗi: ${response.status})`);
+            }
+            const data = await response.json();
+            interface GoogleSpaceResponse {
+                name: string;
+                displayName?: string;
+                spaceType?: 'SPACE' | 'DIRECT_MESSAGE' | string;
+            }
+            const spacesList = (data.spaces || []) as GoogleSpaceResponse[];
+            
+            const mapped: Channel[] = spacesList.map(s => ({
+                id: s.name,
+                name: s.displayName || s.name.replace('spaces/', 'Google Space '),
+                type: s.spaceType === 'DIRECT_MESSAGE' ? 'dm' : 'channel',
+                members: [auth.currentUser?.uid || ''],
+                source: 'google',
+                avatar: 'google-chat'
+            }));
+            
+            setGoogleSpaces(mapped);
+            setIsGoogleConnected(true);
+        } catch (err) {
+            console.error("fetchGoogleSpaces Error:", err);
+            const errMsg = err instanceof Error ? err.message : 'Lỗi tải dữ liệu Google Chat';
+            setGoogleError(errMsg);
+        } finally {
+            setIsSyncingGoogle(false);
+        }
+    };
+
+    const handleConnectGoogle = async () => {
+        setIsSyncingGoogle(true);
+        setGoogleError('');
+        try {
+            const res = await googleSignIn();
+            if (res && res.accessToken) {
+                setIsGoogleConnected(true);
+                await fetchGoogleSpaces(res.accessToken);
+            } else {
+                throw new Error("Không thể nhận Access Token.");
+            }
+        } catch (err) {
+            console.error("handleConnectGoogle Error:", err);
+            const errMsg = err instanceof Error ? err.message : 'Lỗi kết nối tài khoản Google';
+            setGoogleError(errMsg);
+        } finally {
+            setIsSyncingGoogle(false);
+        }
+    };
+
+    const fetchGoogleMessages = async (channelId: string) => {
+        try {
+            const token = await getAccessToken();
+            if (!token) return;
+            
+            const response = await fetch(`https://chat.googleapis.com/v1/${channelId}/messages?pageSize=50`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                throw new Error(`Chat Messages API Error (Mã: ${response.status})`);
+            }
+            const data = await response.json();
+            interface GoogleMessageResponse {
+                name: string;
+                text?: string;
+                createTime?: string;
+                sender?: {
+                    name?: string;
+                    displayName?: string;
+                    avatarUrl?: string;
+                };
+            }
+            const msgList = (data.messages || []) as GoogleMessageResponse[];
+            
+            const mappedMessages: Message[] = msgList.map(msg => {
+                const text = msg.text || '';
+                const senderName = msg.sender?.displayName || 'Thành viên Google';
+                return {
+                    id: msg.name,
+                    authorId: msg.sender?.name || 'google-user',
+                    authorName: senderName,
+                    authorAvatar: msg.sender?.avatarUrl || '',
+                    content: text,
+                    timestamp: msg.createTime ? new Date(msg.createTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Vừa xong'
+                };
+            }).reverse();
+            
+            setMessages(mappedMessages);
+        } catch (err) {
+            console.error("fetchGoogleMessages Error:", err);
+        }
+    };
+
+    useEffect(() => {
+        const checkGoogleStatus = async () => {
+            try {
+                const token = await getAccessToken(false);
+                if (token) {
+                    setIsGoogleConnected(true);
+                    fetchGoogleSpaces(token);
+                }
+            } catch (err) {
+                console.warn("Failed to retrieve Google token automatically:", err);
+            }
+        };
+        if (!user.id.startsWith('user-')) {
+            checkGoogleStatus();
+        }
+    }, [user.id]);
+
+    useEffect(() => {
+        if (!activeChannel || activeChannel.source !== 'google') return;
+        
+        fetchGoogleMessages(activeChannel.id);
+        
+        const intervalId = setInterval(() => {
+            fetchGoogleMessages(activeChannel.id);
+        }, 5000);
+        
+        return () => clearInterval(intervalId);
+    }, [activeChannel?.id]);
+
     // Listen for channels
     useEffect(() => {
         const currentUser = auth.currentUser;
@@ -236,6 +440,10 @@ const ChatView: React.FC<ChatViewProps> = ({ user, allUsers = [] }) => {
     useEffect(() => {
         if (!activeChannel || !auth.currentUser || user.id.startsWith('user-')) {
             setMessages([]);
+            return;
+        }
+
+        if (activeChannel.source === 'google') {
             return;
         }
 
@@ -349,6 +557,32 @@ const ChatView: React.FC<ChatViewProps> = ({ user, allUsers = [] }) => {
         const messageContent = newMessage;
         setNewMessage('');
 
+        if (activeChannel.source === 'google') {
+            try {
+                const token = await getAccessToken();
+                if (!token) {
+                    alert('Không thể lấy Access Token từ Google. Vui lòng kết nối lại.');
+                    return;
+                }
+                const response = await fetch(`https://chat.googleapis.com/v1/${activeChannel.id}/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text: messageContent })
+                });
+                if (!response.ok) {
+                    throw new Error(`Google Chat API post error (Mã: ${response.status})`);
+                }
+                await fetchGoogleMessages(activeChannel.id);
+            } catch (error) {
+                console.error("Failed to post message to Google Chat:", error);
+                alert("Không thể gửi tin nhắn đến Google Chat. Vui lòng thử lại.");
+            }
+            return;
+        }
+
         const path = `channels/${activeChannel.id}/messages`;
         try {
             await addDoc(collection(db, 'channels', activeChannel.id, 'messages'), {
@@ -461,6 +695,62 @@ const ChatView: React.FC<ChatViewProps> = ({ user, allUsers = [] }) => {
                                             </button>
                                         ))}
 
+                                        <div className="pt-2 border-t border-white/40 my-2"></div>
+                                        <div className="flex items-center justify-between px-2 py-1">
+                                            <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-500 uppercase flex items-center gap-1.5">
+                                                <span className="flex h-1.5 w-1.5 relative">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                                </span>
+                                                Google Chat Spaces
+                                            </h3>
+                                            <button 
+                                                onClick={isGoogleConnected ? () => getAccessToken().then(fetchGoogleSpaces) : handleConnectGoogle} 
+                                                className={`p-1 rounded hover:bg-black/10 text-emerald-700 dark:text-emerald-500`}
+                                                disabled={isSyncingGoogle}
+                                                type="button"
+                                                title="Đồng bộ Google Chat"
+                                            >
+                                                <SyncIcon className={`w-3.5 h-3.5 ${isSyncingGoogle ? 'animate-spin' : ''}`} />
+                                            </button>
+                                        </div>
+
+                                        {!isGoogleConnected ? (
+                                            <div className="px-2 py-1 animate-fade-in">
+                                                <button 
+                                                    onClick={handleConnectGoogle}
+                                                    type="button"
+                                                    className="w-full text-center flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-all shadow-md hover:shadow-emerald-500/20 active:scale-98"
+                                                >
+                                                    <GoogleIcon className="w-3.5 h-3.5 shrink-0" />
+                                                    Đồng bộ Google Chat
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-0.5 max-h-48 overflow-y-auto no-scrollbar animate-fade-in">
+                                                {googleSpaces.length === 0 ? (
+                                                    <p className="px-2 py-1 text-xs text-slate-400 italic">Chưa đồng bộ được Space nào.</p>
+                                                ) : (
+                                                    googleSpaces.map(space => (
+                                                        <button 
+                                                            key={space.id} 
+                                                            onClick={() => handleChannelSelect(space)} 
+                                                            type="button"
+                                                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left transition-colors ${activeChannel?.id === space.id ? 'bg-emerald-50 text-emerald-900 border-l-2 border-emerald-500 font-semibold shadow-sm' : 'text-slate-600 hover:bg-emerald-50/50'}`}
+                                                        >
+                                                            <div className="w-5 h-5 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 shrink-0">
+                                                                <GoogleIcon className="w-3 h-3" />
+                                                            </div>
+                                                            <span className="truncate text-xs">{space.name}</span>
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+                                        {googleError && (
+                                            <p className="px-2 py-1 text-[10px] text-red-500 italic mt-1">{googleError}</p>
+                                        )}
+
                                         <h3 className="px-2 pt-4 pb-1 text-xs font-bold text-slate-500 uppercase">Tin nhắn trực tiếp</h3>
                                         {channels.filter(c => c.type === 'dm').length === 0 && (
                                             <p className="px-2 py-1 text-xs text-slate-400 italic">Chưa có cuộc hội thoại nào.</p>
@@ -549,7 +839,13 @@ const ChatView: React.FC<ChatViewProps> = ({ user, allUsers = [] }) => {
                                         )}
                                         {filteredMessages.map(msg => (
                                             <div key={msg.id} className="flex items-start gap-3 animate-fade-in">
-                                                <div className="w-10 h-10 rounded-full bg-cyan-500 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm border border-white/50">{msg.authorAvatar || getInitials(msg.authorName)}</div>
+                                                <div className="w-10 h-10 rounded-full bg-cyan-500 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm border border-white/50 overflow-hidden">
+                                                    {msg.authorAvatar && msg.authorAvatar.startsWith('http') ? (
+                                                        <img src={msg.authorAvatar} alt={msg.authorName} className="w-full h-full object-cover rounded-full" referrerPolicy="no-referrer" />
+                                                    ) : (
+                                                        msg.authorAvatar || getInitials(msg.authorName)
+                                                    )}
+                                                </div>
                                                 <div className="flex-1 min-w-0 group relative">
                                                     <div className="flex items-baseline gap-2">
                                                         <p className="font-semibold text-slate-800 truncate">{msg.authorName}</p>
@@ -584,53 +880,67 @@ const ChatView: React.FC<ChatViewProps> = ({ user, allUsers = [] }) => {
                                                     )}
 
                                                     {/* Reaction Button Tool */}
-                                                    <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center bg-white/80 backdrop-blur-sm rounded-lg border border-slate-200 shadow-sm overflow-hidden z-10">
-                                                        <div className="flex px-1">
-                                                            <button 
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    setShowEmojiPicker(showEmojiPicker === msg.id ? null : msg.id);
-                                                                }}
-                                                                className="p-1.5 hover:bg-slate-100 text-slate-500 transition-colors"
-                                                                title="Add reaction"
-                                                            >
-                                                                <SmileIcon className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
-                                                        
-                                                        {showEmojiPicker === msg.id && (
-                                                            <div className="absolute right-0 bottom-full mb-1 p-1 bg-white border border-slate-200 rounded-lg shadow-xl flex gap-1 z-20 animate-scale-in origin-bottom-right">
-                                                                {commonEmojis.map(emoji => (
-                                                                    <button
-                                                                        key={emoji}
-                                                                        onClick={() => {
-                                                                            handleToggleReaction(msg.id, emoji);
-                                                                            setShowEmojiPicker(null);
-                                                                        }}
-                                                                        className="p-1.5 hover:bg-slate-100 rounded transition-transform hover:scale-125"
-                                                                    >
-                                                                        {emoji}
-                                                                    </button>
-                                                                ))}
+                                                    {activeChannel?.source !== 'google' && (
+                                                        <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center bg-white/80 backdrop-blur-sm rounded-lg border border-slate-200 shadow-sm overflow-hidden z-10">
+                                                            <div className="flex px-1">
+                                                                <button 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setShowEmojiPicker(showEmojiPicker === msg.id ? null : msg.id);
+                                                                    }}
+                                                                    className="p-1.5 hover:bg-slate-100 text-slate-500 transition-colors"
+                                                                    title="Add reaction"
+                                                                >
+                                                                    <SmileIcon className="w-4 h-4" />
+                                                                </button>
                                                             </div>
-                                                        )}
-                                                    </div>
+                                                            
+                                                            {showEmojiPicker === msg.id && (
+                                                                <div className="absolute right-0 bottom-full mb-1 p-1 bg-white border border-slate-200 rounded-lg shadow-xl flex gap-1 z-20 animate-scale-in origin-bottom-right">
+                                                                    {commonEmojis.map(emoji => (
+                                                                        <button
+                                                                            key={emoji}
+                                                                            onClick={() => {
+                                                                                handleToggleReaction(msg.id, emoji);
+                                                                                setShowEmojiPicker(null);
+                                                                            }}
+                                                                            className="p-1.5 hover:bg-slate-100 rounded transition-transform hover:scale-125"
+                                                                        >
+                                                                            {emoji}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                     <div className="p-4 border-t border-white/50 bg-white/40">
-                                        <form onSubmit={handleSendMessage} className="relative">
-                                            <input
-                                                type="text"
-                                                value={newMessage}
-                                                onChange={(e) => setNewMessage(e.target.value)}
-                                                placeholder={`Nhắn trong ${activeChannel.type === 'channel' ? '#' : ''}${activeChannel.name}`}
-                                                className="w-full bg-white/70 border border-transparent focus:bg-white focus:border-cyan-400 focus:ring-0 focus:outline-none placeholder-slate-500 text-slate-800 rounded-lg py-3 pl-4 pr-12 transition-all duration-300 shadow-inner"
-                                            />
-                                            <button type="submit" className="absolute inset-y-0 right-0 px-4 flex items-center text-cyan-600 hover:text-cyan-700 transition-colors">
-                                                <PaperAirplaneIcon className="w-5 h-5"/>
-                                            </button>
+                                        <form onSubmit={handleSendMessage} className="relative flex items-center">
+                                            <div className="relative flex-1">
+                                                <input
+                                                    type="text"
+                                                    value={newMessage}
+                                                    onChange={(e) => setNewMessage(e.target.value)}
+                                                    placeholder={isListening ? "Đang nghe... nói đi..." : `Nhắn trong ${activeChannel.type === 'channel' ? '#' : ''}${activeChannel.name}`}
+                                                    className={`w-full bg-white/70 border border-transparent focus:bg-white focus:border-cyan-400 focus:ring-0 focus:outline-none placeholder-slate-500 text-slate-800 rounded-lg py-3 pl-4 pr-24 transition-all duration-300 shadow-inner ${isListening ? 'animate-pulse text-red-600 bg-red-50/50' : ''}`}
+                                                />
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-2 gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={toggleSpeechRecognition}
+                                                        className={`p-1.5 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-bounce' : 'text-slate-400 hover:text-cyan-600 hover:bg-slate-100'}`}
+                                                        title="Nhập tin nhắn bằng giọng nói (Web Speech API)"
+                                                    >
+                                                        <MicIcon className="w-5 h-5"/>
+                                                    </button>
+                                                    <button type="submit" className="p-1 text-cyan-600 hover:text-cyan-700 transition-colors">
+                                                        <PaperAirplaneIcon className="w-5 h-5"/>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </form>
                                     </div>
                                 </>
@@ -653,8 +963,8 @@ const ChatView: React.FC<ChatViewProps> = ({ user, allUsers = [] }) => {
 
             {/* Modal Chọn người trong hệ thống / danh bạ để chat */}
             {isSelectingContact && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-                    <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col max-h-[80vh] animate-scale-in overflow-hidden">
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+                    <div className="w-[80%] h-[80%] bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col animate-scale-in overflow-hidden">
                         {/* Header */}
                         <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
                             <div>

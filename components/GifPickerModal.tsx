@@ -58,9 +58,9 @@ const GifPickerModal: React.FC<GifPickerModalProps> = ({ onClose, onSelectGif })
   };
 
   return (
-    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex justify-center items-center p-4" aria-modal="true">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9999] flex justify-center items-center p-4" aria-modal="true">
         <div className="absolute inset-0" onClick={onClose}></div>
-        <div className="relative w-full max-w-2xl h-[80vh] max-h-[600px] bg-[--color-surface-tertiary] rounded-xl shadow-2xl flex flex-col animate-fade-in-up">
+        <div className="relative w-[80%] h-[80%] bg-[--color-surface-tertiary] rounded-xl shadow-2xl flex flex-col animate-fade-in-up">
             <header className="p-4 border-b border-[--color-border-secondary] flex justify-between items-center shrink-0">
                 <form onSubmit={handleSearch} className="relative flex-1 max-w-md">
                     <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[--color-text-subtle]" />

@@ -4,10 +4,12 @@ import { useLanguage } from './LanguageContext';
 import { ClipboardListIcon, PlusIcon, XIcon, CheckIcon, SearchIcon, ShareIcon } from './icons';
 import RequestsBanner from './RequestsBanner';
 import CreateRequestModal, { Request } from './CreateRequestModal';
+import { CalendarEvent } from './CalendarView';
 
 interface RequestsViewProps {
     user: User;
     users: User[];
+    onSaveEvent: (event: Omit<CalendarEvent, 'id' | 'color'> & { id?: string; color?: CalendarEvent['color'] }) => Promise<void>;
 }
 
 const mockRequests: Request[] = [
@@ -25,7 +27,7 @@ const mockRequests: Request[] = [
     }
 ];
 
-const RequestsView: React.FC<RequestsViewProps> = ({ user, users }) => {
+const RequestsView: React.FC<RequestsViewProps> = ({ user, users, onSaveEvent }) => {
     const { t } = useLanguage();
     const [requests, setRequests] = useState<Request[]>(mockRequests);
     const [activeTab, setActiveTab] = useState<'mine' | 'to-approve'>('mine');
@@ -59,6 +61,24 @@ const RequestsView: React.FC<RequestsViewProps> = ({ user, users }) => {
         setRequests([newRequest, ...requests]);
         setCreateModalOpen(false);
         showToast('Đã tạo yêu cầu thành công!');
+
+        // If it's a leave request, create a calendar event
+        if (newRequest.type === 'leaveRequest' && newRequest.startDate && onSaveEvent) {
+            const startDate = new Date(newRequest.startDate);
+            
+            // For simplicity, we create one event for the start date. 
+            // In a real app, you might want to create a range or multiple events.
+            await onSaveEvent({
+                title: `Nghỉ phép: ${newRequest.authorName}`,
+                description: `Yêu cầu: ${newRequest.title}\nNội dung: ${newRequest.content}`,
+                date: startDate,
+                startTime: '08:00',
+                endTime: '17:30',
+                color: 'purple',
+                locationType: 'offline',
+                meetingRoom: 'Out of Office'
+            });
+        }
         
         try {
             const approver = users.find(u => u.id === newRequest.approverId);

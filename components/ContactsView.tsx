@@ -247,8 +247,8 @@ const ContactsView: React.FC<ContactsViewProps> = ({ onItemViewed, onNavigate })
             
             {/* DETAILS MODAL (POPUP) */}
             {selectedContact && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in-up">
-                    <div className="bg-[#f4f0f7] dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-scale-in flex flex-col max-h-[90vh]">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fade-in-up">
+                    <div className="bg-[#f4f0f7] dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-[80%] h-[80%] overflow-hidden animate-scale-in flex flex-col">
                         <div className="relative pt-6 px-6 pb-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
                             <div className="absolute top-4 right-4 z-20">
                                 <button 

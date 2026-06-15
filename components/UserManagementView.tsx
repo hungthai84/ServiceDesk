@@ -39,7 +39,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ onClose, onSave }) =>
     
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fade-in-up">
-            <div className="bg-[--color-surface-tertiary] border border-[--color-border-secondary] rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-in">
+            <div className="bg-[--color-surface-tertiary] border border-[--color-border-secondary] rounded-2xl shadow-2xl w-[80%] h-[80%] overflow-hidden animate-scale-in flex flex-col">
                 <div className="p-6 border-b border-[--color-border-secondary] flex justify-between items-center">
                     <h3 className="text-xl font-bold text-[--color-text-primary]">{t('createUser')}</h3>
                     <button onClick={onClose} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full text-[--color-text-subtle]">

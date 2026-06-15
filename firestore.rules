@@ -60,9 +60,10 @@ service cloud.firestore {
 
     function isValidUser(data) {
       return data.keys().hasAll(['email', 'name']) &&
-             data.keys().size() >= 2 && data.keys().size() <= 6 &&
+             data.keys().size() >= 2 && data.keys().size() <= 8 &&
              (!('avatar' in data) || (data.avatar is string && data.avatar.size() <= 1024)) &&
              (!('createdAt' in data) || data.createdAt is number) &&
+             (!('lastLogin' in data) || data.lastLogin is number) &&
              (!('role' in data) || (data.role is string && data.role in ['superadmin', 'admin', 'member'])) &&
              (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 30)) &&
              data.email is string && data.email.size() <= 100 &&
@@ -153,98 +154,113 @@ service cloud.firestore {
              (!('authorAvatar' in data) || (data.authorAvatar is string && data.authorAvatar.size() <= 1024));
     }
 
+    function isValidCalendarEvent(data) {
+      return data.keys().hasAll(['title', 'startTime', 'endTime', 'date', 'ownerId']) &&
+             data.keys().size() >= 5 && data.keys().size() <= 11 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.startTime is string && data.startTime.matches('^[0-9]{2}:[0-9]{2}$') &&
+             data.endTime is string && data.endTime.matches('^[0-9]{2}:[0-9]{2}$') &&
+             data.date is number &&
+             data.ownerId is string && data.ownerId == request.auth.uid &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
+             (!('color' in data) || (data.color is string && data.color in ['blue', 'orange', 'red', 'green'])) &&
+             (!('recurrence' in data) || (data.recurrence is string && data.recurrence in ['none', 'daily', 'weekly', 'monthly', 'yearly'])) &&
+             (!('locationType' in data) || (data.locationType is string && data.locationType in ['offline', 'online'])) &&
+             (!('meetingRoom' in data) || (data.meetingRoom is string && data.meetingRoom.size() <= 200)) &&
+             (!('onlineLink' in data) || (data.onlineLink is string && data.onlineLink.size() <= 1000));
+    }
+
     // --- Rules ---
 
     match /notifications/{notificationId} {
-      allow read: if isSignedIn() && isValidId(notificationId) && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(notificationId) && isValidNotification(incoming()) && incoming().userId == request.auth.uid;
-      allow update: if isSignedIn() && isValidId(notificationId) && existing().userId == request.auth.uid && isValidNotification(incoming()) && incoming().userId == existing().userId && incoming().diff(existing()).affectedKeys().hasOnly(['read']);
-      allow delete: if isSignedIn() && isValidId(notificationId) && resource.data.userId == request.auth.uid;
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidNotification(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && isValidNotification(incoming()) && incoming().userId == existing().userId && incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     match /projects/{projectId} {
-      allow read: if isSignedIn() && isValidId(projectId);
-      allow list: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(projectId) && isValidProject(incoming());
-      allow update: if isSignedIn() && isValidId(projectId) && isValidProject(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'status', 'description', 'dueDate', 'parentProjectId', 'taskListId', 'taskListIds', 'department']);
-      allow delete: if isSignedIn() && isValidId(projectId);
+      allow read, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidProject(incoming());
+      allow update: if isSignedIn() && isValidProject(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'status', 'description', 'dueDate', 'parentProjectId', 'taskListId', 'taskListIds', 'department']);
+      allow delete: if isSignedIn();
     }
 
     match /pages/{pageId} {
-      allow read: if isSignedIn() && isValidId(pageId);
-      allow list: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(pageId) && isValidPage(incoming());
-      allow update: if isSignedIn() && isValidId(pageId) && isValidPage(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'slug', 'status', 'content', 'lastUpdated']);
-      allow delete: if isSignedIn() && isValidId(pageId);
+      allow read, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidPage(incoming());
+      allow update: if isSignedIn() && isValidPage(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'slug', 'status', 'content', 'lastUpdated']);
+      allow delete: if isSignedIn();
     }
 
     match /settings/{settingId} {
-      allow read: if isSignedIn() && isValidId(settingId);
-      allow list: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(settingId) && isValidSiteSettings(incoming());
-      allow update: if isSignedIn() && isValidId(settingId) && isValidSiteSettings(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['siteName', 'siteEmail', 'siteDesc']);
+      allow read, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidSiteSettings(incoming());
+      allow update: if isSignedIn() && isValidSiteSettings(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['siteName', 'siteEmail', 'siteDesc']);
     }
 
     match /users/{userId} {
-      allow read: if isSignedIn() && isValidId(userId);
-      allow list: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(userId) && userId == request.auth.uid && isValidUser(incoming());
-      allow update: if isSignedIn() && isValidId(userId) && userId == request.auth.uid && isValidUser(incoming()) && incoming().email == existing().email && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'avatar', 'role', 'phoneNumber']);
+      allow read, list: if isSignedIn();
+      allow create: if isSignedIn() && userId == request.auth.uid && isValidUser(incoming());
+      allow update: if isSignedIn() && userId == request.auth.uid && isValidUser(incoming()) && incoming().email == existing().email && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'avatar', 'role', 'phoneNumber', 'lastLogin']);
     }
 
     match /tasks/{taskId} {
-      allow read: if isSignedIn() && isValidId(taskId) && resource.data.ownerId == request.auth.uid;
-      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(taskId) && isValidTask(incoming());
-      allow update: if isSignedIn() && isValidId(taskId) && existing().ownerId == request.auth.uid && isValidTask(incoming()) && incoming().ownerId == existing().ownerId && incoming().diff(existing()).affectedKeys().hasOnly(['text', 'completed', 'dueDate', 'taskListId']);
-      allow delete: if isSignedIn() && isValidId(taskId) && resource.data.ownerId == request.auth.uid;
+      allow read: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidTask(incoming());
+      allow update: if isSignedIn() && existing().ownerId == request.auth.uid && isValidTask(incoming()) && incoming().ownerId == existing().ownerId && incoming().diff(existing()).affectedKeys().hasOnly(['text', 'completed', 'dueDate', 'taskListId']);
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
     }
 
     match /notes/{noteId} {
-      allow read: if isSignedIn() && isValidId(noteId) && resource.data.ownerId == request.auth.uid;
-      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(noteId) && isValidNote(incoming());
-      allow update: if isSignedIn() && isValidId(noteId) && existing().ownerId == request.auth.uid && isValidNote(incoming()) && incoming().ownerId == existing().ownerId && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content']);
-      allow delete: if isSignedIn() && isValidId(noteId) && resource.data.ownerId == request.auth.uid;
+      allow read: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidNote(incoming());
+      allow update: if isSignedIn() && existing().ownerId == request.auth.uid && isValidNote(incoming()) && incoming().ownerId == existing().ownerId && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content']);
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    match /events/{eventId} {
+      allow read: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidCalendarEvent(incoming());
+      allow update: if isSignedIn() && existing().ownerId == request.auth.uid && isValidCalendarEvent(incoming()) && incoming().ownerId == existing().ownerId && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'startTime', 'endTime', 'date', 'color', 'recurrence', 'locationType', 'meetingRoom', 'onlineLink']);
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
     }
 
     match /posts/{postId} {
-      allow read: if isSignedIn() && isValidId(postId);
-      allow list: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(postId) && isValidPost(incoming());
-      allow update: if isSignedIn() && isValidId(postId) && existing().authorId == request.auth.uid && isValidPost(incoming()) && incoming().authorId == existing().authorId && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'type']);
-      allow delete: if isSignedIn() && isValidId(postId) && resource.data.authorId == request.auth.uid;
+      allow read, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidPost(incoming());
+      allow update: if isSignedIn() && existing().authorId == request.auth.uid && isValidPost(incoming()) && incoming().authorId == existing().authorId && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'type', 'reactions', 'comments', 'isPinned', 'isSaved']);
+      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
     }
 
     match /blogArticles/{articleId} {
-      allow read: if isSignedIn() && isValidId(articleId);
-      allow list: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(articleId) && isValidBlogArticle(incoming());
-      allow update: if isSignedIn() && isValidId(articleId) && existing().authorId == request.auth.uid && isValidBlogArticle(incoming()) && incoming().authorId == existing().authorId && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'status', 'tags', 'previewImage', 'isPinned']);
-      allow delete: if isSignedIn() && isValidId(articleId) && resource.data.authorId == request.auth.uid;
+      allow read, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidBlogArticle(incoming());
+      allow update: if isSignedIn() && existing().authorId == request.auth.uid && isValidBlogArticle(incoming()) && incoming().authorId == existing().authorId && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'status', 'tags', 'previewImage', 'isPinned']);
+      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
 
       match /comments/{commentId} {
-        allow read: if isSignedIn() && isValidId(commentId);
-        allow list: if isSignedIn();
-        allow create: if isSignedIn() && isValidId(commentId) && isValidComment(incoming()) && incoming().articleId == articleId;
-        allow update: if isSignedIn() && isValidId(commentId) && existing().authorId == request.auth.uid && isValidComment(incoming()) && incoming().authorId == existing().authorId && incoming().articleId == existing().articleId && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'authorAvatar', 'authorName']);
-        allow delete: if isSignedIn() && isValidId(commentId) && resource.data.authorId == request.auth.uid;
+        allow read, list: if isSignedIn();
+        allow create: if isSignedIn() && isValidComment(incoming()) && incoming().articleId == articleId;
+        allow update: if isSignedIn() && existing().authorId == request.auth.uid && isValidComment(incoming()) && incoming().authorId == existing().authorId && incoming().articleId == existing().articleId && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'authorAvatar', 'authorName']);
+        allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
       }
     }
 
     match /channels/{channelId} {
-      allow read: if isSignedIn() && isValidId(channelId) && request.auth.uid in resource.data.members;
-      allow list: if isSignedIn() && request.auth.uid in resource.data.members;
-      allow create: if isSignedIn() && isValidId(channelId) && isValidChannel(incoming()) && request.auth.uid in incoming().members;
-      allow update: if isSignedIn() && isValidId(channelId) && request.auth.uid in existing().members && isValidChannel(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'members', 'type']);
+      allow read, list: if isSignedIn() && request.auth.uid in resource.data.members;
+      allow create: if isSignedIn() && isValidChannel(incoming()) && request.auth.uid in incoming().members;
+      allow update: if isSignedIn() && request.auth.uid in existing().members && isValidChannel(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'members', 'type']);
       
       match /messages/{messageId} {
-        allow read: if isSignedIn() && isValidId(messageId) && isMember(channelId);
-        allow list: if isSignedIn() && isMember(channelId);
-        allow create: if isSignedIn() && isValidId(messageId) && isMember(channelId) && isValidChatMessage(incoming()) && incoming().channelId == channelId;
-        allow update: if isSignedIn() && isValidId(messageId) && existing().authorId == request.auth.uid && isValidChatMessage(incoming()) && incoming().authorId == existing().authorId && incoming().channelId == existing().channelId && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'authorAvatar', 'authorName']);
-        allow delete: if isSignedIn() && isValidId(messageId) && resource.data.authorId == request.auth.uid;
+        allow read, list: if isSignedIn() && isMember(channelId);
+        allow create: if isSignedIn() && isMember(channelId) && isValidChatMessage(incoming()) && incoming().channelId == channelId;
+        allow update: if isSignedIn() && existing().authorId == request.auth.uid && isValidChatMessage(incoming()) && incoming().authorId == existing().authorId && incoming().channelId == existing().channelId && incoming().diff(existing()).affectedKeys().hasOnly(['content', 'authorAvatar', 'authorName']);
+        allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
       }
     }
   }

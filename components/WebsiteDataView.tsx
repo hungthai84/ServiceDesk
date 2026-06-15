@@ -1113,8 +1113,8 @@ const WebsiteDataView: React.FC<WebsiteDataViewProps> = ({ user, allUsers, onUse
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-fade-in-up">
-            <div className="bg-[--color-surface-tertiary] border border-[--color-border-secondary] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-scale-in flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fade-in-up">
+            <div className="bg-[--color-surface-tertiary] border border-[--color-border-secondary] rounded-2xl shadow-2xl w-[80%] h-[80%] overflow-hidden animate-scale-in flex flex-col">
                 <div className="p-6 border-b border-[--color-border-secondary] flex justify-between items-center bg-[--color-surface-secondary]">
                     <h3 className="text-xl font-bold text-[--color-text-primary] flex items-center gap-2">
                         <FileTextIcon className="w-6 h-6 text-[--color-accent-500]" />
@@ -1201,8 +1201,8 @@ const WebsiteDataView: React.FC<WebsiteDataViewProps> = ({ user, allUsers, onUse
       )}
 
       {isTestModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4 animate-fade-in-up">
-            <div className="bg-[--color-surface-tertiary] border border-[--color-border-secondary] rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-scale-in flex flex-col">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-fade-in-up">
+            <div className="bg-[--color-surface-tertiary] border border-[--color-border-secondary] rounded-2xl shadow-2xl w-[80%] h-[80%] overflow-hidden animate-scale-in flex flex-col">
                 <div className="p-6 border-b border-[--color-border-secondary] flex justify-between items-center bg-[--color-surface-secondary]">
                     <h3 className="text-lg font-bold text-[--color-text-primary] flex items-center gap-2">
                         <MailIcon className="w-5 h-5 text-[--color-accent-500]" />

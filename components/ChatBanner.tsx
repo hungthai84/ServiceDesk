@@ -59,14 +59,14 @@ const AnimatedChatIcon = () => (
 
 const ChatBanner: React.FC = () => {
   return (
-    <div className="relative py-2 px-4 sm:py-2.5 sm:px-5 rounded-xl bg-gradient-to-br from-blue-500 to-purple-700 text-white overflow-hidden shadow-lg shrink-0">
+    <div className="relative py-3 px-6 sm:py-4 sm:px-8 rounded-xl bg-gradient-to-br from-blue-500 to-purple-700 text-white overflow-hidden shadow-lg shrink-0">
       <div className="absolute -bottom-8 -right-8 w-36 h-36 bg-white/10 rounded-full opacity-50 z-0" aria-hidden="true"></div>
       <div className="absolute top-2 left-2 w-20 h-20 bg-white/10 rounded-full opacity-50 z-0" aria-hidden="true"></div>
       
       <div className="relative z-10 flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="text-center sm:text-left">
-          <h1 className="text-2xl font-bold">Trung tâm Trao đổi</h1>
-          <p className="mt-1 text-purple-100 max-w-md italic text-sm">
+          <h1 className="text-3xl font-bold">Trung tâm Trao đổi</h1>
+          <p className="mt-2 text-purple-100 max-w-lg italic font-medium">
             “Trao đổi đúng lúc – phản hồi đúng người – lưu đúng nơi.”
           </p>
         </div>
