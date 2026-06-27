@@ -166,6 +166,17 @@ service cloud.firestore {
              (!('onlineLink' in data) || (data.onlineLink is string && data.onlineLink.size() <= 1000));
     }
 
+    function isValidProjectGoal(data) {
+      return data.keys().hasAll(['title', 'status', 'progress', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.status is string && data.status in ['not_started', 'in_progress', 'completed'] &&
+             data.progress is number && data.progress >= 0 && data.progress <= 100 &&
+             data.createdAt is number &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
+             (!('dueDate' in data) || (data.dueDate is string && data.dueDate.size() <= 30)) &&
+             (!('assignees' in data) || (data.assignees is list && data.assignees.size() <= 50));
+    }
+
     // --- Rules ---
 
     match /notifications/{notificationId} {
@@ -180,6 +191,13 @@ service cloud.firestore {
       allow read, list: if isSignedIn();
       allow create: if isSignedIn() && isValidProject(incoming());
       allow update: if isSignedIn() && isValidProject(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'status', 'description', 'dueDate', 'parentProjectId', 'taskListId', 'taskListIds', 'department']);
+      allow delete: if isSignedIn();
+    }
+
+    match /project_goals/{goalId} {
+      allow read, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidProjectGoal(incoming());
+      allow update: if isSignedIn() && isValidProjectGoal(incoming()) && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'status', 'progress', 'dueDate', 'assignees']);
       allow delete: if isSignedIn();
     }
 

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { User, View, RecentItem } from '../App';
-import BlogBanner from './BlogBanner';
+
 import { SearchIcon, PlusIcon, SettingsIcon, BloggerIcon, ChevronDownIcon, CalendarPlusIcon, RobotIcon, PaperAirplaneIcon, BookOpenIcon, PinIcon, ShareIcon, XIcon } from './icons';
 import { useLanguage } from './LanguageContext';
 import { GoogleGenAI } from '@google/genai';
@@ -430,8 +430,8 @@ const BlogView: React.FC<BlogViewProps> = ({ user, onNavigate, onSchedule, onIte
     };
 
     return (
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[3px] gap-3 pb-24 md:pb-8">
-            <div className="shrink-0"> <BlogBanner /> </div>
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] gap-3 pb-24 md:pb-8">
+            
             <div className="flex-1 overflow-y-auto no-scrollbar" onScroll={handleScroll}>
                 {/* Search and Filter */}
                 <div className="flex flex-col md:flex-row items-center gap-4 mb-8 w-full sticky top-0 z-20">

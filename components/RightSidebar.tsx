@@ -91,7 +91,7 @@ const RightSidebar: React.FC<RightSidebarProps> = (props) => {
   const { t } = useLanguage();
   return (
     <div className={`fixed inset-y-0 right-0 z-40 md:relative md:z-auto shrink-0 transition-all duration-300 ease-in-out md:transform-none ${isMobileOpen ? 'translate-x-0' : 'translate-x-full'} ${isCollapsed ? 'md:w-0' : 'md:w-80'}`}>
-      <aside className={`relative flex flex-col bg-transparent backdrop-blur-lg h-full transition-all duration-300 ease-in-out w-72 md:w-full ${isCollapsed ? 'p-0 border-l-0 overflow-hidden' : 'p-[5px] border-l border-[--color-border-secondary]'}`}>
+      <aside className={`relative flex flex-col bg-[--color-surface-primary] sm:rounded-[16px] border border-[--color-border-secondary]/50 shadow-sm h-full transition-all duration-300 ease-in-out w-72 md:w-full ${isCollapsed ? 'p-0 overflow-hidden border-transparent shadow-none bg-transparent' : 'p-[5px]'}`}>
         <div className="md:hidden flex items-center justify-end mb-4">
             <button onClick={onClose} className="p-2 rounded-full hover:bg-black/10">
                 <XIcon className="w-6 h-6 text-[--color-text-secondary]" />
@@ -118,7 +118,7 @@ const RightSidebar: React.FC<RightSidebarProps> = (props) => {
             </div>
 
             {/* Collapsed View - Icons */}
-            <div className={`absolute top-6 left-0 right-0 flex-col items-center justify-start gap-4 transition-opacity duration-200 hidden md:flex ${isCollapsed && !isMobileOpen ? 'opacity-100 delay-150' : 'opacity-0 pointer-events-none'}`}>
+            <div className={`absolute top-6 left-0 right-0 flex-col items-center justify-start gap-[5px] transition-opacity duration-200 hidden md:flex ${isCollapsed && !isMobileOpen ? 'opacity-100 delay-150' : 'opacity-0 pointer-events-none'}`}>
                  <h2 className="text-xs font-bold text-[--color-text-subtle] uppercase px-2 whitespace-nowrap shrink-0 mb-2">Feed</h2>
                  {notifications.slice(0, 5).map(item => {
                     return (

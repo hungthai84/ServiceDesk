@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import TopSidebar from './components/TopSidebar';
 import LeftSidebar from './components/LeftSidebar';
 import RightSidebar from './components/RightSidebar';
 import MainContent from './components/MainContent';
@@ -30,7 +29,7 @@ import WebsiteDataView from './components/WebsiteDataView';
 import ProjectManagementView from './components/ProjectManagementView';
 import ProcessWorkflowView from './components/ProcessWorkflowView';
 import CommandPalette from './components/CommandPalette';
-import { FolderIcon, StickyNoteIcon, ChecklistIcon, MailIcon, CalendarIcon, GraduationCapIcon, BloggerIcon, ChatIcon, VideoIcon } from './components/icons';
+import { FolderIcon, StickyNoteIcon, ChecklistIcon, MailIcon, CalendarIcon, GraduationCapIcon, BloggerIcon, ChatIcon, VideoIcon, BellIcon } from './components/icons';
 import EventModal from './components/EventModal';
 import MobileBottomNav from './components/MobileBottomNav';
 import { motion, AnimatePresence } from 'motion/react';
@@ -604,7 +603,7 @@ const AppContent: React.FC = () => {
       case 'website-data':
         return <WebsiteDataView user={user} allUsers={allUsers} onUsersChange={handleUsersChange} />;
       case 'projects':
-        return <ProjectManagementView user={user} onNavigateToTasks={handleNavigateToTasks} onSendNotification={handleSendNotification} />;
+        return <ProjectManagementView user={user} allUsers={allUsers} onNavigateToTasks={handleNavigateToTasks} onSendNotification={handleSendNotification} />;
       case 'user-management':
         return <UserManagementView currentUser={user} users={allUsers} onUsersChange={handleUsersChange} />;
       case 'org-chart':
@@ -665,8 +664,8 @@ const AppContent: React.FC = () => {
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
-    <div className="h-screen w-screen bg-transparent p-[5px] font-sans text-[--color-text-primary] overflow-hidden relative">
-      <div className="w-full h-full bg-[--color-surface-primary] rounded-[10px] shadow-2xl overflow-hidden flex flex-col relative ring-1 ring-black/5">
+    <div className="h-screen w-screen bg-transparent p-0 sm:p-[5px] font-sans text-[--color-text-primary] overflow-hidden relative">
+      <div className="w-full h-full bg-[--color-surface-primary] sm:rounded-[12px] shadow-2xl overflow-hidden flex flex-col relative ring-1 ring-[--color-border-primary]">
         {(isMobileNavOpen || isMobileActivityOpen) && (
           <div 
               onClick={closeAllDrawers} 
@@ -682,16 +681,46 @@ const AppContent: React.FC = () => {
             defaultTitle={defaultEventTitle || undefined}
           />}
         
-        <TopSidebar 
-          user={user}
-          onLogout={handleLogout}
-          onNotificationClick={() => setRightSidebarCollapsed(!isRightSidebarCollapsed)}
-          onNavigate={handleNavigate}
-          onToggleMobileNav={() => setMobileNavOpen(!isMobileNavOpen)}
-          onToggleMobileActivity={() => setMobileActivityOpen(!isMobileActivityOpen)}
-          unreadCount={unreadCount}
-        />
-        <div className="flex flex-1 min-h-0">
+        
+        <div className="flex flex-1 min-h-0 p-[5px] gap-[5px] bg-[--color-surface-secondary]/30 relative">
+          
+          {/* Floating Right Menu */}
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-3 bg-[--color-surface-primary] p-2 rounded-l-xl shadow-lg border border-r-0 border-[--color-border-secondary]/50 z-50">
+            <button
+                onClick={() => setAiWidgetOpen(!isAiWidgetOpen)}
+                className={`relative w-12 h-12 rounded-xl overflow-hidden shadow-sm group border transition-all ${isAiWidgetOpen ? 'border-purple-500 ring-2 ring-purple-500/50' : 'border-[--color-border-secondary] hover:scale-105'}`}
+                title="Trợ lý ảo AI"
+            >
+                <img 
+                    src="https://i.ibb.co/x8Spz9Qm/Avata-AI-POW.gif" 
+                    alt="AI Assistant"
+                    className="w-full h-full object-cover"
+                />
+            </button>
+            <button 
+                onClick={() => handleNavigate('email')}
+                className="p-3 rounded-xl hover:bg-[--color-surface-secondary] transition-colors text-red-500 bg-[--color-surface-tertiary] shadow-sm relative group"
+                title="Mail"
+            >
+                <MailIcon className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" />
+            </button>
+            <button 
+                onClick={() => handleNavigate('chat')}
+                className="p-3 rounded-xl hover:bg-[--color-surface-secondary] transition-colors text-green-500 bg-[--color-surface-tertiary] shadow-sm relative group"
+                title="Tin nhắn"
+            >
+                <ChatIcon className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" />
+            </button>
+            <button 
+                onClick={() => setRightSidebarCollapsed(!isRightSidebarCollapsed)}
+                className="relative p-3 rounded-xl hover:bg-[--color-surface-secondary] transition-colors text-yellow-500 bg-[--color-surface-tertiary] shadow-sm group" 
+                title="Thông báo"
+            >
+                <BellIcon className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" />
+                {unreadCount > 0 && <span className="absolute top-1 right-1 flex items-center justify-center min-w-[20px] h-[20px] px-1 bg-red-600 rounded-full text-white text-[10px] font-bold ring-2 ring-white shadow-sm">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+            </button>
+          </div>
+
           <LeftSidebar 
             isCollapsed={isLeftSidebarCollapsed}
             onToggleCollapse={() => setLeftSidebarCollapsed(!isLeftSidebarCollapsed)}
@@ -700,8 +729,6 @@ const AppContent: React.FC = () => {
             activeView={activeView}
             onNavigate={handleNavigate}
             recentlyViewed={recentlyViewed}
-            onAiClick={() => setAiWidgetOpen(!isAiWidgetOpen)}
-            isAiOpen={isAiWidgetOpen}
             user={user}
             onLogout={handleLogout}
           />
@@ -712,14 +739,9 @@ const AppContent: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -5 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="flex-1 flex flex-col min-w-0 m-2"
+              className="flex-1 flex flex-col min-w-0 glass-card-premium rounded-[16px] overflow-hidden"
               style={{
-                background: 'rgba(255, 255, 255, 0.75)',
-                borderRadius: '16px',
-                boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
-                backdropFilter: 'blur(18.2px)',
-                WebkitBackdropFilter: 'blur(18.2px)',
-                border: '1px solid rgba(255, 255, 255, 1)'
+                boxShadow: '0 4px 30px rgba(0, 0, 0, 0.05)',
               }}
             >
               {renderMainView()}

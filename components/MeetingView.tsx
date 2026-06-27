@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { User, RecentItem } from '../App';
-import MeetingBanner from './MeetingBanner';
+
 import { ClockIcon, UsersIcon, VideoIcon, MailIcon, PlusIcon, GoogleIcon, SyncIcon, FileTextIcon, FilePdfIcon, DownloadIcon, CopyIcon, CalendarPlusIcon, ShareIcon } from './icons';
 import { useLanguage } from './LanguageContext';
 
@@ -306,9 +306,8 @@ const MeetingView: React.FC<MeetingViewProps> = ({ onItemViewed, isEmbedded = fa
   }
 
   return (
-    <main className={`flex-1 flex flex-col min-h-0 overflow-hidden ${isEmbedded ? 'p-0' : 'p-[3px] pb-24 md:pb-8'}`}>
+    <main className={`flex-1 flex flex-col min-h-0 overflow-hidden ${isEmbedded ? 'p-0' : 'p-[5px] pb-24 md:pb-8'}`}>
       <div className={`flex-1 flex flex-col gap-3 overflow-y-auto no-scrollbar ${isEmbedded ? 'p-0' : ''}`}>
-        {!isEmbedded && <MeetingBanner />}
 
         <div className="flex flex-col md:flex-row items-center gap-4 shrink-0">
           <button className="w-full md:w-auto flex items-center justify-center gap-2 py-3 px-6 bg-gradient-to-br from-blue-500 to-sky-600 text-white font-bold rounded-lg shadow-lg hover:shadow-sky-500/40 focus:outline-none focus:ring-2 focus:ring-sky-400 transition-all transform hover:scale-105">

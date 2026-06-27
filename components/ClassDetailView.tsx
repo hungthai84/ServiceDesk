@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { User, View } from '../App';
 import { useLanguage } from './LanguageContext';
 import { initialContacts } from './ContactsView';
-import { ClassBannerBg, mockClasses, ClassInfo } from './TrainingDashboardView';
+
 import { OnlineLearningView } from './OnlineLearningView';
 import { 
   MessageSquare, 
@@ -1275,7 +1275,7 @@ const ClassDetailView: React.FC<ClassDetailViewProps> = ({ user, classId, onNavi
     ];
 
     return (
-        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto no-scrollbar p-[3px] gap-3.5 pb-24 md:pb-8">
+        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto no-scrollbar p-[5px] gap-3.5 pb-24 md:pb-8">
             
             {/* Nav Back Strip */}
             <div className="flex items-center justify-between ml-1 mr-1 flex-wrap gap-2 shrink-0">
@@ -1345,7 +1345,7 @@ const ClassDetailView: React.FC<ClassDetailViewProps> = ({ user, classId, onNavi
 
             {/* Class Banner Hero Card following Google Classroom exactly */}
             <div className="relative h-40 md:h-48 rounded-2xl overflow-hidden shadow-md shrink-0 border border-slate-200/50 dark:border-slate-800">
-                <ClassBannerBg image={classInfo.image} className="w-full h-full" />
+                
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"></div>
                 
                 {/* Visual Details overlaid inside the classroom card hero header */}

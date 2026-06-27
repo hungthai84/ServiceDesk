@@ -163,6 +163,7 @@ const AnimatedTasklistIcon = () => (
     </svg>
 );
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TasklistBanner: React.FC<{ onSync?: () => void, isSyncing?: boolean }> = ({ onSync, isSyncing }) => {
     return (
         <div className="relative p-3 sm:p-4 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-600 text-white overflow-hidden shadow-lg">
@@ -1149,8 +1150,10 @@ const TasklistView: React.FC<{
     return () => unsubscribe();
   }, [user?.id]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSyncingTasks, setIsSyncingTasks] = useState(false);
   
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSyncGoogleTasks = async () => {
       setIsSyncingTasks(true);
       showToast('Đang kết nối Google Tasks...');
@@ -1881,7 +1884,7 @@ const TasklistView: React.FC<{
   };
 
   return (
-    <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[3px] pb-24 md:pb-8">
+    <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] pb-24 md:pb-8">
       <div className="flex-1 flex flex-col gap-3 overflow-y-auto no-scrollbar">
         {editingTask && <TaskEditModal 
             task={editingTask.task} 
@@ -1910,7 +1913,7 @@ const TasklistView: React.FC<{
           </div>
         )}
 
-        <TasklistBanner onSync={handleSyncGoogleTasks} isSyncing={isSyncingTasks} />
+        
         
         {/* Search and Action Bar */}
         <div className="flex flex-col sm:flex-row gap-3 px-1 py-2">

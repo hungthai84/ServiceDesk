@@ -254,14 +254,9 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
     <div className="flex items-center justify-center min-h-screen w-full font-sans overflow-hidden relative">
       <div className="absolute inset-0 z-0" style={{ background: 'var(--color-background-body)' }}></div>
       <div 
-        className="w-full max-w-md p-8 space-y-6 z-10 m-4"
+        className="w-full max-w-md p-8 space-y-6 z-10 m-4 glass-card-premium rounded-[20px]"
         style={{
-          background: 'rgba(255, 255, 255, 0.75)',
-          borderRadius: '16px',
-          boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
-          backdropFilter: 'blur(18.2px)',
-          WebkitBackdropFilter: 'blur(18.2px)',
-          border: '1px solid rgba(255, 255, 255, 1)'
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)'
         }}
       >
         {/* Brand Logo & Name */}
@@ -271,7 +266,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             <div className="w-16 h-16 flex items-center justify-center mb-3">
               <img 
                 src="https://i.ibb.co/VcwGhfRp/Logo-mau-xanh-Lark-CV-Nguyen-H-ng-Th-i.png" 
-                alt="Power Service SDP Platfrom" 
+                alt="Power Service SDP Platform" 
                 className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"
               />
@@ -281,7 +276,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             Power Service
           </h1>
           <h2 className="text-black dark:text-slate-100 font-bold text-[13px] uppercase tracking-widest mt-1">
-            SDP Platfrom
+            SDP Platform
           </h2>
         </div>
 

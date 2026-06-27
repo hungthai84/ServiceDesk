@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { User, RecentItem, View } from '../App';
-import ContactsBanner from './ContactsBanner';
+
 import ContactCard, { Contact } from './ContactCard';
 import { UsersIcon, GoogleIcon, SearchIcon, GridIcon, ListIcon, SitemapIcon, UserPlusIcon, UploadIcon, DownloadIcon, ChatIcon, XIcon, MailIcon } from './icons';
 import { useLanguage } from './LanguageContext';
 import CreateContactModal from './CreateContactModal';
 import OrgChartView from './OrgChartView';
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 // MOCK DATA
 export const initialContacts: Contact[] = [
@@ -33,15 +35,59 @@ interface ContactsViewProps {
   onNavigate?: (view: View) => void;
 }
 
-const ContactsView: React.FC<ContactsViewProps> = ({ onItemViewed, onNavigate }) => {
+const ContactsView: React.FC<ContactsViewProps> = ({ user, onItemViewed, onNavigate }) => {
     const [view, setView] = useState<'card' | 'list' | 'org'>('card');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDept, setSelectedDept] = useState<string>('all');
     const [contacts, setContacts] = useState<Contact[]>(initialContacts);
     const [isCreateModalOpen, setCreateModalOpen] = useState(false);
     const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+    const [isCreateGoalModalOpen, setIsCreateGoalModalOpen] = useState(false);
+    const [goalContact, setGoalContact] = useState<Contact | null>(null);
+    const [goalTitle, setGoalTitle] = useState('');
+    const [goalDesc, setGoalDesc] = useState('');
+    const [isSubmittingGoal, setIsSubmittingGoal] = useState(false);
     const { t } = useLanguage();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    
+    const handleCreateGoalClick = (e: React.MouseEvent, contact: Contact) => {
+        e.stopPropagation();
+        setGoalContact(contact);
+        setGoalTitle('');
+        setGoalDesc('');
+        setIsCreateGoalModalOpen(true);
+    };
+
+    const handleSaveGoal = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!goalTitle.trim()) return;
+        
+        if (user.id.startsWith('user-')) {
+            alert('Tính năng này yêu cầu đăng nhập bằng Google.');
+            setIsCreateGoalModalOpen(false);
+            return;
+        }
+
+        setIsSubmittingGoal(true);
+        try {
+            await addDoc(collection(db, 'project_goals'), {
+                title: goalTitle,
+                description: goalDesc,
+                status: 'not_started',
+                progress: 0,
+                assignees: [], // We could try to map contact to user ID here if they match by email
+                dueDate: '',
+                createdAt: Date.now()
+            });
+            setIsCreateGoalModalOpen(false);
+            if (onNavigate) onNavigate('projects');
+        } catch (error) {
+            console.error(error);
+            alert('Lỗi khi tạo mục tiêu');
+        } finally {
+            setIsSubmittingGoal(false);
+        }
+    };
     
     const departmentsList = useMemo(() => {
         const depts = new Set<string>();
@@ -127,10 +173,47 @@ const ContactsView: React.FC<ContactsViewProps> = ({ onItemViewed, onNavigate })
 
 
     return (
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[3px] pb-24 md:pb-8">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] pb-24 md:pb-8">
             {isCreateModalOpen && <CreateContactModal onClose={() => setCreateModalOpen(false)} onSave={handleSaveContact} />}
+            
+            {isCreateGoalModalOpen && goalContact && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                  <div className="bg-[--color-surface-primary] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                    <div className="p-4 sm:p-6 border-b border-[--color-border-secondary] flex items-center justify-between shrink-0 bg-[--color-surface-secondary]/50">
+                      <h3 className="text-xl font-bold text-[--color-text-primary] flex items-center gap-2">
+                        Tạo Mục tiêu cho {goalContact.name}
+                      </h3>
+                      <button onClick={() => setIsCreateGoalModalOpen(false)} className="p-2 text-[--color-text-secondary] hover:bg-[--color-surface-tertiary] rounded-full transition-colors">
+                        <XIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="p-4 sm:p-6 overflow-y-auto no-scrollbar flex-1">
+                      <form id="contact-goal-form" onSubmit={handleSaveGoal} className="flex flex-col gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-[--color-text-primary] mb-1.5">Tên mục tiêu <span className="text-red-500">*</span></label>
+                          <input type="text" required value={goalTitle} onChange={e => setGoalTitle(e.target.value)} className="w-full bg-[--color-surface-secondary] border border-[--color-border-secondary] rounded-xl px-4 py-2.5 text-[--color-text-primary] focus:outline-none focus:ring-2 focus:ring-[--color-accent-500] transition-shadow" placeholder="Nhập tên mục tiêu..." />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-[--color-text-primary] mb-1.5">Mô tả</label>
+                          <textarea value={goalDesc} onChange={e => setGoalDesc(e.target.value)} className="w-full bg-[--color-surface-secondary] border border-[--color-border-secondary] rounded-xl px-4 py-2.5 text-[--color-text-primary] focus:outline-none focus:ring-2 focus:ring-[--color-accent-500] transition-shadow min-h-[100px] resize-y" placeholder="Mô tả chi tiết mục tiêu..."></textarea>
+                        </div>
+                      </form>
+                    </div>
+                    <div className="p-4 sm:p-6 border-t border-[--color-border-secondary] flex justify-end gap-3 shrink-0 bg-[--color-surface-primary]">
+                      <button type="button" onClick={() => setIsCreateGoalModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold text-[--color-text-secondary] hover:bg-[--color-surface-secondary] transition-colors">
+                        Hủy
+                      </button>
+                      <button type="submit" form="contact-goal-form" disabled={isSubmittingGoal} className="px-5 py-2.5 rounded-xl font-bold bg-[--color-accent-600] text-white hover:bg-[--color-accent-500] transition-colors shadow-md disabled:opacity-70 flex items-center gap-2">
+                        {isSubmittingGoal && <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"></div>}
+                        Tạo Mục tiêu
+                      </button>
+                    </div>
+                  </div>
+                </div>
+            )}
+
             <div className="flex-1 flex flex-col gap-3 overflow-y-auto no-scrollbar">
-                <ContactsBanner />
+                
                 <div className="flex-1 rounded-xl overflow-hidden flex min-h-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
                     {/* Right Pane (Now takes full width because Left Menu is removed) */}
                     <div className="flex-1 flex flex-col min-w-0">
@@ -193,7 +276,7 @@ const ContactsView: React.FC<ContactsViewProps> = ({ onItemViewed, onNavigate })
                                     {filteredContacts.map(c => <div key={c.id} onClick={() => handleContactView(c)} className="cursor-pointer"><ContactCard contact={c} onChatClick={(e) => {
                                         e.stopPropagation();
                                         if (onNavigate) onNavigate('chat');
-                                    }} /></div>)}
+                                    }} onCreateGoalClick={handleCreateGoalClick} /></div>)}
                                 </div>
                             )}
                             {view === 'list' && (

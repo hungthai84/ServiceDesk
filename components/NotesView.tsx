@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import NotesBanner from './NotesBanner';
+
 import NoteCard, { Note, ChecklistItem, keepColors } from './NoteCard';
 import { 
   Pencil, 
@@ -1136,9 +1136,9 @@ const NotesView: React.FC<{ user: User; onSync?: () => void }> = ({ user, onSync
   const modalActiveColor = keepColors.find(c => c.id === modalColor) || keepColors[0];
 
   return (
-    <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[3px] gap-3 pb-24 md:pb-8">
+    <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] gap-3 pb-24 md:pb-8">
       <div className="shrink-0 animate-fade-in-up">
-        <NotesBanner />
+        
       </div>
 
       <div className="flex flex-1 min-h-0 bg-white/40 dark:bg-slate-900/30 backdrop-blur-xl rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-800/50 overflow-hidden">

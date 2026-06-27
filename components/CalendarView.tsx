@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeftIcon, PlusIcon, SyncIcon, CheckCircleIcon, VideoIcon, CalendarIcon } from './icons';
 import { useLanguage } from './LanguageContext';
-import CalendarBanner from './CalendarBanner';
+
 import MeetingView from './MeetingView';
 import { User, RecentItem } from '../types';
 import { mockTaskLists } from './TasklistView';
@@ -174,10 +174,10 @@ const CalendarView: React.FC<CalendarViewProps> = ({ user, events, onSaveEvent, 
     }, [events, selectedDate]);
 
     return (
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[3px] pb-24 md:pb-8">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] pb-24 md:pb-8">
             <div className="flex-1 flex flex-col gap-3 overflow-y-auto no-scrollbar">
                 <div className="shrink-0 flex flex-col gap-4">
-                    <CalendarBanner />
+                    
                     <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-xl shadow-sm border border-white/50 self-start">
                         <button 
                             onClick={() => setActiveTab('calendar')}

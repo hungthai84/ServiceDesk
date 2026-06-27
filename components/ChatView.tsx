@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { User } from '../App';
 import { HashtagIcon, PaperAirplaneIcon, SearchIcon, XIcon, PlusIcon, SmileIcon, UserCircleIcon, SyncIcon, GoogleIcon, MicIcon } from './icons';
-import ChatBanner from './ChatBanner';
+
 import { initialContacts } from './ContactsView';
 import { db, auth, getAccessToken, googleSignIn } from '../firebase';
 import { 
@@ -637,9 +637,9 @@ const ChatView: React.FC<ChatViewProps> = ({ user, allUsers = [] }) => {
     }, [searchTerm, messages]);
 
     return (
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[3px] pb-24 md:pb-8">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] pb-24 md:pb-8">
             <div className="flex-1 flex flex-col gap-3 overflow-y-auto no-scrollbar">
-                <ChatBanner />
+                
                 
                 <div className="flex-1 bg-white/40 backdrop-blur-xl rounded-xl shadow-lg overflow-hidden flex flex-col min-h-0">
                     <div className="flex-1 flex min-h-0">

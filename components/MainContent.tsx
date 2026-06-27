@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import Banner from './Banner';
+
 import { User, RecentItem, View, CheckInEntry, ActivityItem } from '../types';
 import { useLanguage } from './LanguageContext';
 import { CalendarEvent } from './CalendarView';
@@ -21,7 +21,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Toolti
 const WidgetCard: React.FC<{ title: string; icon?: React.ReactNode; onNavigate?: () => void; children: React.ReactNode; className?: string }> = ({ title, icon, onNavigate, children, className = '' }) => {
     const { t } = useLanguage();
     return (
-        <div className={`p-4 bg-[--color-surface-secondary] rounded-xl ring-1 ring-[--color-border-primary] shadow-md flex flex-col animate-fade-in-up break-inside-avoid ${className}`}>
+        <div className={`p-4 glass-card-premium rounded-[16px] flex flex-col animate-fade-in-up break-inside-avoid ${className}`}>
             <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-2">
                     {icon}
@@ -673,10 +673,10 @@ const MainContent: React.FC<MainContentProps> = ({ user, recentlyViewed, events,
         )}
         <div className="overflow-y-auto no-scrollbar flex-1 flex flex-col gap-[5px]">
             <div className="p-[5px] space-y-4">
-              <Banner userName={user.name} />
+              
               
               {/* AI Support Chat Section */}
-              <div className="bg-white/40 backdrop-blur-md rounded-2xl p-4 shadow-sm border border-white/50 animate-fade-in">
+              <div className="glass-card-premium rounded-[20px] p-5 mb-2 shadow-sm animate-fade-in">
                   <div className="flex items-center gap-3 mb-3">
                       <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">AI</div>
                       <h3 className="font-bold text-[--color-text-primary]">Trợ lý hỗ trợ AI</h3>
@@ -685,7 +685,7 @@ const MainContent: React.FC<MainContentProps> = ({ user, recentlyViewed, events,
                        <input 
                           type="text" 
                           placeholder="Bạn cần hỗ trợ gì hôm nay?" 
-                          className="flex-1 bg-white/70 border border-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-300 focus:outline-none rounded-xl px-4 py-2 text-sm"
+                          className="flex-1 bg-[--color-surface-secondary] border border-[--color-border-primary] focus:bg-[--color-surface-solid] focus:ring-2 focus:ring-[--color-accent-400] focus:outline-none rounded-xl px-4 py-2 text-sm text-[--color-text-primary]"
                        />
                        <button className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-xl transition-all shadow-md active:scale-95">
                            <ChatIcon className="w-5 h-5"/>

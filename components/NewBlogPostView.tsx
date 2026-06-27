@@ -155,7 +155,7 @@ const NewBlogPostView: React.FC<NewBlogPostViewProps> = ({ user, onNavigate }) =
   };
 
   return (
-    <main className="flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-900/50 p-[3px] gap-3 pb-24 md:pb-8">
+    <main className="flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-900/50 p-[5px] gap-3 pb-24 md:pb-8">
       {isGifPickerOpen && (
         <GifPickerModal
             onClose={() => setIsGifPickerOpen(false)}

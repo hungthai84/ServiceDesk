@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import TaskManagementBanner from './TaskManagementBanner';
+
 import { FileTextIcon, XIcon, ClipboardListIcon, TrashIcon, ClockIcon } from './icons';
 import { RecentItem, AppNotification } from '../App';
 import { db } from '../firebase';
@@ -740,7 +740,7 @@ const TaskView: React.FC<TaskViewProps> = ({ onItemViewed, onSendNotification })
     };
 
     return (
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-6 relative">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] pb-24 md:pb-8 relative">
             {taskToDeleteId && (
                 <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9999] flex justify-center items-center p-4" aria-modal="true" role="dialog">
                     <div className="relative w-full max-w-md bg-[--color-surface-tertiary] backdrop-blur-2xl rounded-xl shadow-2xl flex flex-col animate-fade-in-up">
@@ -766,7 +766,7 @@ const TaskView: React.FC<TaskViewProps> = ({ onItemViewed, onSendNotification })
                 />
             )}
             <div className="shrink-0 mb-6">
-                <TaskManagementBanner />
+                
             </div>
 
             {/* Task Summary Dashboard */}

@@ -9,7 +9,7 @@ interface BannerProps {
 const Banner: React.FC<BannerProps> = ({ userName }) => {
   const { t } = useLanguage();
   return (
-    <div className="relative py-4 px-8 rounded-xl bg-gradient-to-br from-[--color-accent-400] to-[--color-accent-gradient-secondary] text-white overflow-hidden shadow-lg">
+    <div className="relative py-6 px-8 rounded-[20px] bg-gradient-to-br from-[--color-accent-400] to-[--color-accent-gradient-secondary] text-white overflow-hidden shadow-xl animate-fade-in-up">
       <div className="absolute -bottom-12 -right-12 w-48 h-48 bg-white/10 rounded-full opacity-50 z-0"></div>
       <div className="absolute top-4 left-4 w-24 h-24 bg-white/10 rounded-full opacity-50 z-0"></div>
       <div className="relative z-10">

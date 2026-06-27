@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, View } from '../App';
 import { useLanguage } from './LanguageContext';
-import TrainingBanner from './TrainingBanner';
+
 import { 
   Plus, 
   User as UserIcon, 
@@ -131,7 +131,7 @@ const ClassCard: React.FC<ClassCardProps> = ({ classInfo, user, onNavigate, onSh
             {/* Header / Banner region */}
             <div className="relative h-28 w-full group/banner cursor-pointer shrink-0 overflow-hidden" onClick={() => onNavigate('class-detail', classInfo.id)}>
                 <div className="w-full h-full transform group-hover/banner:scale-105 transition-transform duration-500">
-                    <ClassBannerBg image={classInfo.image} className="w-full h-full" />
+                    
                 </div>
                 <div className="absolute inset-0 bg-black/20 group-hover/banner:bg-black/30 transition-all"></div>
                 
@@ -430,10 +430,8 @@ const TrainingDashboardView: React.FC<TrainingDashboardViewProps> = ({ user, onN
     }, [classes, searchQuery, progressFilter, user?.id]);
 
     return (
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[3px] gap-3 pb-24 md:pb-8 relative">
-            <div className="shrink-0">
-                <TrainingBanner />
-            </div>
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] gap-3 pb-24 md:pb-8 relative">
+            
             
             <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-4">
                 

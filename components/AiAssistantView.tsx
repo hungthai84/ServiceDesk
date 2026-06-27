@@ -1,6 +1,6 @@
 
 import React from 'react';
-import AiAssistantBanner from './AiAssistantBanner';
+
 import { User } from '../App';
 import { MicIcon, PaperAirplaneIcon } from './icons';
 
@@ -25,9 +25,9 @@ const AiAssistantView: React.FC<AiAssistantViewProps> = ({ user }) => {
     };
 
     return (
-        <main className="flex-1 flex flex-col bg-white/40 backdrop-blur-xl min-h-0 m-4 rounded-xl shadow-lg overflow-hidden">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] pb-24 md:pb-8">
             <div className="shrink-0 p-6">
-                <AiAssistantBanner />
+                
             </div>
             <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar p-6 pt-0">
                 <div className="flex-1 max-w-4xl mx-auto w-full flex flex-col">

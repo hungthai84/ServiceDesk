@@ -5,16 +5,18 @@ import { SitemapIcon, PlusIcon, FileEditIcon, TrashIcon, XIcon, ChecklistIcon, S
 import { db, auth } from '../firebase';
 import { collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../firebase-errors';
-import { mockTaskLists, TaskList } from './TasklistView';
+import TasklistView, { mockTaskLists, TaskList } from './TasklistView';
+import GoalsView from './GoalsView';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-import ProjectBanner from './ProjectBanner';
+
 import { AppNotification } from '../App';
 
 interface ProjectManagementViewProps {
   user: User;
+  allUsers: User[];
   onNavigateToTasks?: (taskListId: string) => void;
   onSendNotification?: (notif: Omit<AppNotification, 'id' | 'createdAt'>) => void;
 }
@@ -33,8 +35,9 @@ interface ProjectData {
   dependencyIds?: string[];
 }
 
-const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, onNavigateToTasks, onSendNotification }) => {
+const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, allUsers, onNavigateToTasks, onSendNotification }) => {
   const { t } = useLanguage();
+  const [activeMainTab, setActiveMainTab] = useState<'goals' | 'projects' | 'tasks'>('projects');
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState('');
@@ -670,11 +673,55 @@ const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, onN
   };
 
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar p-[3px] pb-24 md:pb-8 flex flex-col gap-3">
-      <div className="shrink-0">
-        <ProjectBanner />
+    <div className="flex-1 overflow-y-auto no-scrollbar p-[5px] pb-24 md:pb-8 flex flex-col gap-3">
+      {/* Main Horizontal Tabs */}
+      <div className="flex items-center gap-2 bg-[--color-surface-secondary] p-2 rounded-2xl border border-[--color-border-secondary] shadow-sm shrink-0">
+        <button
+          onClick={() => setActiveMainTab('goals')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+            activeMainTab === 'goals'
+              ? 'bg-[--color-accent-600] text-white shadow-md'
+              : 'text-[--color-text-secondary] hover:text-[--color-text-primary] hover:bg-[--color-surface-tertiary]'
+          }`}
+        >
+          Mục tiêu
+        </button>
+        <button
+          onClick={() => setActiveMainTab('projects')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+            activeMainTab === 'projects'
+              ? 'bg-[--color-accent-600] text-white shadow-md'
+              : 'text-[--color-text-secondary] hover:text-[--color-text-primary] hover:bg-[--color-surface-tertiary]'
+          }`}
+        >
+          Dự án
+        </button>
+        <button
+          onClick={() => setActiveMainTab('tasks')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+            activeMainTab === 'tasks'
+              ? 'bg-[--color-accent-600] text-white shadow-md'
+              : 'text-[--color-text-secondary] hover:text-[--color-text-primary] hover:bg-[--color-surface-tertiary]'
+          }`}
+        >
+          Công việc
+        </button>
       </div>
 
+      {activeMainTab === 'goals' && (
+        <div className="flex-1 min-h-0 bg-[--color-surface-secondary] rounded-2xl border border-[--color-border-secondary] shadow-lg flex flex-col overflow-hidden">
+          <GoalsView user={user} allUsers={allUsers} showToast={showToast} />
+        </div>
+      )}
+
+      {activeMainTab === 'tasks' && (
+        <div className="flex-1 min-h-0 bg-[--color-surface-secondary] rounded-2xl border border-[--color-border-secondary] shadow-lg flex flex-col overflow-hidden">
+          <TasklistView user={user} allUsers={allUsers} onSendNotification={onSendNotification} />
+        </div>
+      )}
+
+      {activeMainTab === 'projects' && (
+        <>
       {/* Pie Chart and Project Status Statistics Section */}
       <div className="bg-[--color-surface-secondary] rounded-2xl p-6 border border-[--color-border-secondary] shadow-lg shrink-0 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-[--color-border-secondary]">
@@ -1991,6 +2038,8 @@ const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({ user, onN
                 </form>
             </div>
         </div>
+      )}
+      </>
       )}
       {toastMessage && (
         <div className="fixed bottom-5 right-5 z-[9999] bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 animate-fade-in-up">

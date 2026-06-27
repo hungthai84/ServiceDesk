@@ -1,6 +1,6 @@
 import React from 'react';
 import { User, ServiceState, ServiceName } from '../types';
-import GoogleSyncBanner from './GoogleSyncBanner';
+
 import { useLanguage } from './LanguageContext';
 import { GoogleIcon, SettingsIcon } from './icons';
 
@@ -70,10 +70,8 @@ const AccountSyncView: React.FC<AccountSyncViewProps> = ({ user, services, onTog
     const { t } = useLanguage();
 
     return (
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-6 gap-6">
-            <div className="shrink-0">
-                <GoogleSyncBanner />
-            </div>
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] pb-24 md:pb-8">
+            
 
             <div className="flex-1 overflow-y-auto no-scrollbar pr-2 -mr-2">
                  {/* Main Account Connection */}

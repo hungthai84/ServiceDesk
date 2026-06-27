@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { User, RecentItem } from '../App';
-import DriveBanner from './DriveBanner';
+
 import { 
     FolderIcon, UploadIcon, GridIcon, ListIcon, ChevronLeftIcon, 
     FileTextIcon, FileImageIcon, FileVideoIcon, FilePdfIcon, ShareIcon, DownloadIcon, TrashIcon, InfoIcon,
@@ -9,6 +9,7 @@ import {
 import { useLanguage } from './LanguageContext';
 import GooglePickerButton from './GooglePickerButton';
 import { getAccessToken } from '../firebase';
+import { backupDatabaseToDrive, restoreDatabaseFromDrive } from '../lib/driveDatabase';
 
 // --- TYPES ---
 interface FileSystemItem {
@@ -262,9 +263,9 @@ const DriveView: React.FC<DriveViewProps> = ({ user, onItemViewed }) => {
     };
 
     return (
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[3px] pb-24 md:pb-8">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] pb-24 md:pb-8">
             <div className="flex-1 flex flex-col gap-3 overflow-y-auto no-scrollbar">
-                <DriveBanner />
+                
                 <div className="flex-1 bg-white/40 backdrop-blur-xl rounded-xl shadow-lg overflow-hidden flex min-h-0">
                     
                     {/* Folder Tree Pane */}
@@ -301,7 +302,40 @@ const DriveView: React.FC<DriveViewProps> = ({ user, onItemViewed }) => {
                                 </React.Fragment>
                             ))}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <a href="https://drive.google.com/drive/folders/1O-LaLAA7FNrIzMKGwyxHCdlIKh_W4htY?usp=sharing" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 py-2 px-4 bg-gradient-to-br from-teal-500 to-emerald-600 text-white font-bold rounded-lg shadow-md hover:shadow-emerald-500/40 transition-all transform hover:scale-105">
+                                    <FolderIcon className="w-5 h-5"/> <span className="hidden sm:inline">Ổ chung</span>
+                                </a>
+                                <button onClick={async () => {
+                                    setIsSyncing(true);
+                                    try {
+                                        await backupDatabaseToDrive();
+                                        showToast('Sao lưu cơ sở dữ liệu lên Drive thành công!');
+                                    } catch (e) {
+                                        console.error(e);
+                                        showToast('Lỗi khi sao lưu dữ liệu.');
+                                    } finally {
+                                        setIsSyncing(false);
+                                    }
+                                }} disabled={isSyncing} className="py-2 px-4 bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold rounded-lg shadow-md hover:shadow-purple-500/40 transition-all transform hover:scale-105 flex items-center gap-2 disabled:opacity-60">
+                                    <UploadIcon className="w-4 h-4"/> <span className="hidden sm:inline">Tạo/Sao lưu CSDL</span>
+                                </button>
+                                <button onClick={async () => {
+                                    if (!window.confirm('Khôi phục cơ sở dữ liệu sẽ ghi đè dữ liệu hiện tại. Bạn có chắc chắn?')) return;
+                                    setIsSyncing(true);
+                                    try {
+                                        await restoreDatabaseFromDrive();
+                                        showToast('Khôi phục cơ sở dữ liệu thành công!');
+                                        setTimeout(() => window.location.reload(), 1500);
+                                    } catch (e) {
+                                        console.error(e);
+                                        showToast('Lỗi khi khôi phục dữ liệu.');
+                                    } finally {
+                                        setIsSyncing(false);
+                                    }
+                                }} disabled={isSyncing} className="py-2 px-4 bg-gradient-to-br from-slate-600 to-slate-800 text-white font-bold rounded-lg shadow-md hover:shadow-slate-500/40 transition-all transform hover:scale-105 flex items-center gap-2 disabled:opacity-60">
+                                    <DownloadIcon className="w-4 h-4"/> <span className="hidden sm:inline">Khôi phục CSDL</span>
+                                </button>
                                 <button onClick={handleSync} disabled={isSyncing} title={isSyncing ? t('syncing') : t('syncWithDrive')} className="p-2.5 rounded-lg bg-white/70 text-blue-700 shadow-md hover:bg-white transition-all transform hover:scale-105 disabled:opacity-60">
                                     <SyncIcon className={`w-5 h-5 ${isSyncing ? 'animate-spin' : ''}`} />
                                 </button>
@@ -313,7 +347,7 @@ const DriveView: React.FC<DriveViewProps> = ({ user, onItemViewed }) => {
                                     multiple
                                 />
                                 <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 py-2 px-4 bg-gradient-to-br from-blue-500 to-sky-600 text-white font-bold rounded-lg shadow-md hover:shadow-sky-500/40 transition-all transform hover:scale-105">
-                                    <UploadIcon className="w-5 h-5"/> <span className="hidden sm:inline">Tải lên</span>
+                                    <UploadIcon className="w-5 h-5"/> <span className="hidden xl:inline">Tải lên</span>
                                 </button>
                                 <GooglePickerButton onPicked={handlePickedFromDrive} className="hover:scale-105" />
                                 <div className="bg-white/50 p-1 rounded-lg flex items-center text-sm font-semibold">

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { User } from '../App';
 import { useLanguage } from './LanguageContext';
 import { ClipboardListIcon, PlusIcon, XIcon, CheckIcon, SearchIcon, ShareIcon } from './icons';
-import RequestsBanner from './RequestsBanner';
+
 import CreateRequestModal, { Request } from './CreateRequestModal';
 import { CalendarEvent } from './CalendarView';
 
@@ -144,10 +144,8 @@ const RequestsView: React.FC<RequestsViewProps> = ({ user, users, onSaveEvent })
     };
 
     return (
-        <div className="animate-fade-in-up flex-1 overflow-y-auto no-scrollbar p-[3px] pb-24 md:pb-8 relative flex flex-col gap-3">
-            <div className="shrink-0">
-                <RequestsBanner />
-            </div>
+        <div className="animate-fade-in-up flex-1 overflow-y-auto no-scrollbar p-[5px] pb-24 md:pb-8 relative flex flex-col gap-3">
+            
 
             <div className="w-full flex-1">
                 <div className="bg-[--color-surface-secondary] rounded-2xl shadow-xl overflow-hidden border border-[--color-border-secondary] flex flex-col min-h-[500px]">

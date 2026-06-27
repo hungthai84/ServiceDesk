@@ -11,7 +11,7 @@ import {
     SaveIcon, MailIcon, XIcon as CloseIcon
 } from './icons';
 import UserManagementView from './UserManagementView';
-import AccountSettingsBanner from './AccountSettingsBanner';
+
 
 enum OperationType {
   CREATE = 'create',
@@ -1011,10 +1011,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     };
     
     return (
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[3px] gap-3 pb-24 md:pb-8">
-            <div className="shrink-0">
-                <AccountSettingsBanner />
-            </div>
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] gap-3 pb-24 md:pb-8">
+            
 
             <div className="flex-1 flex flex-col md:flex-row gap-8 min-h-0">
                 {/* Left Navigation (Desktop) */}

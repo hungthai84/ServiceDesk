@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, CheckInEntry, ActivityItem } from '../App';
 import { useLanguage } from './LanguageContext';
-import CheckInBanner from './CheckInBanner';
+
 import { FingerprintIcon, LogInIcon, LogoutIcon } from './icons';
 
 // --- Helper Functions ---
@@ -220,10 +220,8 @@ const CheckInView: React.FC<CheckInViewProps> = ({ user, log, activityLog = [], 
     ).sort((a, b) => b.checkInTime.getTime() - a.checkInTime.getTime());
 
     return (
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[3px] gap-3 pb-24 md:pb-8">
-            <div className="shrink-0">
-                <CheckInBanner />
-            </div>
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] gap-3 pb-24 md:pb-8">
+            
 
             <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
                 {/* Status and Action Panel */}

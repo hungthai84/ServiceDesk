@@ -28,7 +28,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activeView, onNavigat
     const { t } = useLanguage();
     
     return (
-        <footer className="md:hidden fixed bottom-1 overflow-hidden h-16 bg-[--color-surface-tertiary]/80 backdrop-blur-lg border-t border-[--color-border-primary] z-30 flex items-center justify-around w-full">
+        <footer className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[--color-surface-tertiary] backdrop-blur-xl border-t border-[--color-border-primary] z-[60] flex items-center justify-around px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] rounded-t-[20px]">
             <NavButton icon={<HomeIcon />} label={t('dashboard')} isActive={activeView === 'dashboard'} onClick={() => onNavigate('dashboard')} />
             <NavButton icon={<CalendarIcon />} label={t('calendar')} isActive={activeView === 'calendar'} onClick={() => onNavigate('calendar')} />
             <NavButton icon={<ChecklistIcon />} label={t('tasklist')} isActive={activeView === 'tasklist' || activeView === 'tasks'} onClick={() => onNavigate('tasks')} />

@@ -31,8 +31,6 @@ interface LeftSidebarProps {
   activeView: View;
   onNavigate: (view: View, section?: string) => void;
   recentlyViewed: RecentItem[];
-  onAiClick?: () => void;
-  isAiOpen?: boolean;
   user: User;
   onLogout: () => void;
 }
@@ -45,8 +43,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   activeView, 
   onNavigate, 
   recentlyViewed, 
-  onAiClick, 
-  isAiOpen,
   user,
   onLogout
 }) => {
@@ -57,7 +53,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     <div 
         className={`fixed inset-y-0 left-0 z-40 md:relative md:z-20 shrink-0 transition-transform duration-300 ease-in-out md:transform-none ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
     >
-      <aside className={`relative flex flex-col p-[5px] bg-transparent h-full transition-all duration-300 ease-in-out shrink-0 w-[190px] md:${isCollapsed ? 'w-20' : 'w-[190px]'}`}>
+      <aside className={`relative flex flex-col p-[5px] bg-[--color-surface-primary] sm:rounded-[16px] border border-[--color-border-secondary]/50 shadow-sm h-full transition-all duration-300 ease-in-out shrink-0 w-[190px] md:${isCollapsed ? 'w-20' : 'w-[190px]'}`}>
         
         {/* Toggle Button */}
         <button 
@@ -71,14 +67,31 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
           )}
         </button>
 
-        <div className="flex items-center justify-end mb-6 md:hidden">
-            <button onClick={onClose} className="p-2 rounded-full hover:bg-black/10">
+        <div className="flex items-center justify-between mb-6 md:mb-2 px-2 pt-2">
+            <div className="flex items-center gap-2 select-none overflow-hidden">
+                <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                    <img 
+                        src="https://i.ibb.co/VcwGhfRp/Logo-mau-xanh-Lark-CV-Nguyen-H-ng-Th-i.png" 
+                        alt="Power Service" 
+                        className="w-full h-full object-contain"
+                        referrerPolicy="no-referrer"
+                    />
+                </div>
+                {!isCollapsed && (
+                    <div className="flex flex-col min-w-0 md:flex">
+                        <span className="text-[#474DD3] dark:text-[#474DD3] font-extrabold text-[12.5px] leading-none tracking-tight uppercase whitespace-nowrap truncate">
+                            Power Service
+                        </span>
+                        <span className="text-black dark:text-slate-100 font-bold text-[9px] leading-none tracking-wider uppercase mt-1 truncate">
+                            SDP Platform
+                        </span>
+                    </div>
+                )}
+            </div>
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-black/10 md:hidden shrink-0">
                 <XIcon className="w-6 h-6 text-[--color-text-secondary]" />
             </button>
         </div>
-
-        {/* Spacing on Desktop when Brand Logo is moved to TopSidebar */}
-        <div className="hidden md:block h-3"></div>
 
         <nav className="flex-grow flex flex-col justify-center gap-[5px] overflow-y-auto no-scrollbar">
           <NavItem icon={<HomeIcon className="w-5 h-5 shrink-0 text-indigo-500" />} label={t('dashboard')} active={activeView === 'dashboard'} isCollapsed={isCollapsed} onClick={() => onNavigate('dashboard')} />
@@ -86,7 +99,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
           
           <NavItem icon={<ChecklistIcon className="w-5 h-5 shrink-0 text-teal-600" />} label={t('projects') || 'Dự án'} active={activeView === 'projects'} isCollapsed={isCollapsed} onClick={() => onNavigate('projects')} />
           <NavItem icon={<FolderIcon className="w-5 h-5 shrink-0 text-yellow-500" />} label={t('drive')} active={activeView === 'drive'} isCollapsed={isCollapsed} onClick={() => onNavigate('drive')} />
-          <NavItem icon={<ChecklistIcon className="w-5 h-5 shrink-0 text-green-500" />} label={t('tasklist')} active={activeView === 'tasklist'} isCollapsed={isCollapsed} onClick={() => onNavigate('tasklist')} />
           <NavItem icon={<UsersIcon className="w-5 h-5 shrink-0 text-cyan-500" />} label={t('contacts')} active={activeView === 'contacts'} isCollapsed={isCollapsed} onClick={() => onNavigate('contacts')} />
           <NavItem icon={<CalendarIcon className="w-5 h-5 shrink-0 text-red-500" />} label={t('calendar')} active={activeView === 'calendar'} isCollapsed={isCollapsed} onClick={() => onNavigate('calendar')} />
           <NavItem icon={<StickyNoteIcon className="w-5 h-5 shrink-0 text-amber-500" />} label={t('notes')} active={activeView === 'notes'} isCollapsed={isCollapsed} onClick={() => onNavigate('notes')} />
@@ -121,9 +133,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
           )}
         </nav>
 
-        {/* Bottom Section: Profile + AI Assistant */}
+        {/* Bottom Section: Profile */}
         <div className="mt-auto pt-3 border-t border-[--color-border-secondary]/60 flex flex-col gap-2.5 shrink-0">
-          {/* User Profile placed above AI */}
           <div className={`flex items-center gap-2.5 w-full p-1 rounded-xl transition-all ${!isCollapsed ? 'bg-slate-100/30 dark:bg-slate-800/30 border border-[--color-border-secondary]/40 px-2 py-1.5' : 'justify-center'}`}>
             <UserMenu user={user} onLogout={onLogout} onNavigate={onNavigate} direction="up" />
             {!isCollapsed && (
@@ -133,50 +144,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
               </div>
             )}
           </div>
-
-          {onAiClick && (
-            <div className="flex flex-col items-center shrink-0 w-full animate-fade-in-up">
-              {!isCollapsed ? (
-                <button
-                  onClick={onAiClick}
-                  className={`w-full flex items-center gap-3 p-2.5 rounded-xl bg-gradient-to-r ${
-                    isAiOpen 
-                      ? 'from-indigo-500/20 to-purple-500/20 border-[--color-accent-500]' 
-                      : 'from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/18 hover:to-purple-500/18 border-[--color-border-secondary]'
-                  } border transition-all duration-300 transform active:scale-95 text-left`}
-                >
-                  <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 border border-purple-500/30">
-                    <img 
-                      src="https://i.ibb.co/x8Spz9Qm/Avata-AI-POW.gif" 
-                      alt="AI Assistant"
-                      className="w-full h-full object-cover" 
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold text-[--color-text-primary] flex items-center gap-1">
-                      Trợ lý ảo AI
-                      <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                    </div>
-                    <div className="text-[10px] text-[--color-text-subtle] truncate">Trò chuyện & hỗ trợ...</div>
-                  </div>
-                </button>
-              ) : (
-                <button
-                  onClick={onAiClick}
-                  className={`w-10 h-10 rounded-full overflow-hidden shrink-0 border transition-all duration-300 ${
-                    isAiOpen ? 'border-[--color-accent-500] ring-2 ring-[--color-accent-500]/50' : 'border-purple-500/30 hover:shadow-lg hover:scale-105'
-                  }`}
-                  title="Trợ lý ảo AI"
-                >
-                  <img 
-                    src="https://i.ibb.co/x8Spz9Qm/Avata-AI-POW.gif" 
-                    alt="AI Assistant"
-                    className="w-full h-full object-cover" 
-                  />
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </aside>
     </div>

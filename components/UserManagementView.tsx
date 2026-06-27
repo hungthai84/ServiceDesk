@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User } from '../App';
 import { useLanguage } from './LanguageContext';
-import UserManagementBanner from './UserManagementBanner';
+
 import { ChevronDownIcon, PlusIcon, XIcon, GoogleIcon } from './icons';
 import { db } from '../firebase';
 import { doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
@@ -191,10 +191,8 @@ const UserManagementView: React.FC<UserManagementViewProps> = ({ currentUser, us
 
 
     return (
-        <div className="animate-fade-in-up flex-1 overflow-y-auto no-scrollbar p-[3px] pb-24 md:pb-8 flex flex-col gap-3">
-            <div className="shrink-0">
-                <UserManagementBanner />
-            </div>
+        <div className="animate-fade-in-up flex-1 overflow-y-auto no-scrollbar p-[5px] pb-24 md:pb-8 flex flex-col gap-3">
+            
             <div className="w-full flex-1">
                 <div className="bg-[--color-surface-secondary] rounded-2xl shadow-xl overflow-hidden border border-[--color-border-secondary]">
                     <div className="p-6 border-b border-[--color-border-secondary] flex flex-col md:flex-row md:items-center justify-between gap-4">

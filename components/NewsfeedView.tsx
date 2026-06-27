@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import NewsfeedBanner from './NewsfeedBanner';
+
 import CreatePostModal from './CreatePostModal';
 import { User } from '../App';
 import { useLanguage } from './LanguageContext';
@@ -959,11 +959,9 @@ const NewsfeedView: React.FC<NewsfeedViewProps> = ({ user }) => {
     );
 
     return (
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[3px] pb-24 md:pb-8">
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-[5px] pb-24 md:pb-8">
             <div className="flex-1 flex flex-col gap-3 overflow-y-auto no-scrollbar">
-                <div className="shrink-0">
-                    <NewsfeedBanner />
-                </div>
+                
                 
                 <div className="flex-1 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-xl shadow-lg overflow-hidden flex min-h-0 border border-slate-100 dark:border-slate-800">
                     {/* Left Sidebar for Filters (Default Collapsed Icon-only) */}
